@@ -1,8 +1,8 @@
 use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
 
 pub struct ModrinthAPI {
-    pub client: reqwest::Client,
-    pub base_url: String,
+    pub(super) client: reqwest::Client,
+    pub(super) base_url: String,
 }
 
 impl ModrinthAPI {
