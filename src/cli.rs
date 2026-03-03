@@ -20,6 +20,7 @@ pub enum Commands {
         #[arg(short, long)]
         facets: Option<String>,
     },
+    #[command(alias = "add", alias = "i")]
     Install {
         input: String,
     },
@@ -32,5 +33,9 @@ pub enum Commands {
 
         #[arg(short, long)]
         yes: bool,
+    },
+    #[command(alias = "crawl")]
+    CheckJarDeps {
+        input: String,
     },
 }
