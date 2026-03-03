@@ -1,17 +1,16 @@
+use crate::modrinth::ModrinthAPI;
 use comfy_table::presets::UTF8_FULL;
 use comfy_table::{Attribute, Cell, Color, ContentArrangement, Table};
 use console::style;
-use crate::modrinth::ModrinthAPI;
 
 pub async fn run(
-    api: &ModrinthAPI, 
-    query: String, 
-    limit: i32, 
-    page: i32, 
-    sort: String, 
-    facets: Option<String>
+    api: &ModrinthAPI,
+    query: String,
+    limit: i32,
+    page: i32,
+    sort: String,
+    facets: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    
     let current_page = page.max(1);
     let offset = (current_page - 1) * limit;
 
