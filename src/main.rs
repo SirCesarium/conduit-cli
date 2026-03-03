@@ -4,6 +4,8 @@ use console::style;
 mod cli;
 mod commands;
 mod config;
+mod inspector;
+mod lock;
 mod modrinth;
 mod progress;
 use cli::{Cli, Commands};
@@ -33,6 +35,11 @@ async fn main() {
         }
         Commands::Init { name, loader, yes } => {
             if let Err(e) = commands::init::run(name, loader, yes) {
+                eprintln!("{} {}", style("Error:").red().bold(), e);
+            }
+        }
+        Commands::CheckJarDeps { input } => {
+            if let Err(e) = commands::check_jar_deps::run(input) {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
