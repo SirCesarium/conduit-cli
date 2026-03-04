@@ -29,7 +29,7 @@ async fn main() {
             }
         }
         Commands::Add { input } => {
-            if let Err(e) = commands::install::run(&api, input).await {
+            if let Err(e) = commands::add::run(&api, input).await {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
@@ -42,6 +42,9 @@ async fn main() {
             if let Err(e) = commands::check_jar_deps::run(input) {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
+        }
+        Commands::Install => {
+
         }
     }
 }
