@@ -1,14 +1,13 @@
-use crate::config::ConduitConfig;
-use crate::lock::ConduitLock;
 use console::style;
-use std::collections::HashSet;
-use std::fs;
+use conduit_cli::core::events::{CoreCallbacks, CoreEvent};
+use conduit_cli::core::io::{load_config, load_lock, save_config, save_lock};
+use conduit_cli::core::paths::CorePaths;
+use conduit_cli::core::remover::remove_mod;
 
 pub async fn run(input: String) -> Result<(), Box<dyn std::error::Error>> {
-    let config_content =
-        fs::read_to_string("conduit.json").map_err(|_| "❌ No conduit.json found.")?;
-    let mut config: ConduitConfig = serde_json::from_str(&config_content)?;
-    let mut lock = ConduitLock::load();
+    let paths = CorePaths::from_project_dir(".")?;
+    let mut config = load_config(&paths)?;
+    let mut lock = load_lock(&paths)?;
 
     if !config.mods.contains_key(&input) {
         println!(
@@ -48,46 +47,25 @@ pub async fn run(input: String) -> Result<(), Box<dyn std::error::Error>> {
         style(&input).red().bold()
     );
 
-    config.mods.remove(&input);
+    let mut cb = CliCallbacks;
+    let _ = remove_mod(&paths, &input, &mut config, &mut lock, &mut cb)?;
 
-    let mut mods_to_keep = HashSet::new();
-    for slug in config.mods.keys() {
-        collect_dependencies(slug, &lock, &mut mods_to_keep);
-    }
-
-    let all_locked_slugs: Vec<String> = lock.locked_mods.keys().cloned().collect();
-    for slug in all_locked_slugs {
-        if !mods_to_keep.contains(&slug)
-            && let Some(mod_data) = lock.locked_mods.remove(&slug) {
-                let dest_path = std::path::Path::new("mods").join(&mod_data.filename);
-                if dest_path.exists() {
-                    fs::remove_file(dest_path)?;
-                }
-                println!(
-                    "{} Purged {}",
-                    style("🗑").dim(),
-                    style(&slug).dim().italic()
-                );
-            }
-    }
-
-    fs::write("conduit.json", serde_json::to_string_pretty(&config)?)?;
-    lock.save()?;
+    save_config(&paths, &config)?;
+    save_lock(&paths, &lock)?;
 
     println!("{} Removed {}", style("✔").green(), style(&input).bold());
     Ok(())
 }
 
-fn collect_dependencies(slug: &str, lock: &ConduitLock, kept: &mut HashSet<String>) {
-    if kept.contains(slug) {
-        return;
-    }
-    if let Some(mod_data) = lock.locked_mods.get(slug) {
-        kept.insert(slug.to_string());
-        for dep_id in &mod_data.dependencies {
-            if let Some((dep_slug, _)) = lock.locked_mods.iter().find(|(_, m)| &m.id == dep_id) {
-                collect_dependencies(dep_slug, lock, kept);
+struct CliCallbacks;
+
+impl CoreCallbacks for CliCallbacks {
+    fn on_event(&mut self, event: CoreEvent) {
+        match event {
+            CoreEvent::Purged { slug } => {
+                println!("{} Purged {}", style("🗑").dim(), style(slug).dim().italic());
             }
+            _ => {}
         }
     }
 }

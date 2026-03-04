@@ -7,6 +7,12 @@ pub struct Cli {
     pub command: Commands,
 }
 
+#[derive(Subcommand, Clone, Debug)]
+pub enum VerifyTarget {
+    Modrinth,
+    Local,
+}
+
 #[derive(Subcommand)]
 pub enum Commands {
     Search {
@@ -23,6 +29,9 @@ pub enum Commands {
     #[command(alias = "a")]
     Add {
         input: String,
+
+        #[arg(long, num_args = 1..)]
+        deps: Vec<String>,
     },
     Init {
         #[arg(short, long)]
@@ -38,7 +47,20 @@ pub enum Commands {
     CheckJarDeps {
         input: String,
     },
-    Install,
+    Install {
+        #[arg(long)]
+        strict: bool,
+
+        #[arg(long)]
+        force: bool,
+
+        #[arg(short = 'y', long)]
+        yes: bool,
+    },
+    Verify {
+        #[command(subcommand)]
+        target: Option<VerifyTarget>,
+    },
     Remove {
         input: String
     },

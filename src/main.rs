@@ -3,13 +3,10 @@ use console::style;
 
 mod cli;
 mod commands;
-mod config;
-mod inspector;
-mod lock;
-mod modrinth;
 mod progress;
-use cli::{Cli, Commands};
-use modrinth::ModrinthAPI;
+mod ui;
+use cli::{Cli, Commands, VerifyTarget};
+use conduit_cli::modrinth::ModrinthAPI;
 
 #[tokio::main]
 async fn main() {
@@ -28,8 +25,8 @@ async fn main() {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
-        Commands::Add { input } => {
-            if let Err(e) = commands::add::run(&api, input).await {
+        Commands::Add { input, deps } => {
+            if let Err(e) = commands::add::run(&api, input, deps).await {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
@@ -43,8 +40,14 @@ async fn main() {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
-        Commands::Install => {
-            if let Err(e) = commands::install::run(&api).await {
+        Commands::Install { strict, force, yes } => {
+            if let Err(e) = commands::install::run(&api, strict, force, yes).await {
+                eprintln!("{} {}", style("Error:").red().bold(), e);
+            }
+        }
+        Commands::Verify { target } => {
+            let target = target.unwrap_or(VerifyTarget::Modrinth);
+            if let Err(e) = commands::verify::run(target).await {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }

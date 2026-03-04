@@ -1,4 +1,4 @@
-use crate::inspector::JarInspector;
+use conduit_cli::inspector::JarInspector;
 use console::style;
 use std::error::Error;
 

@@ -1,41 +1,23 @@
-use crate::config::ConduitConfig;
-use crate::lock::ConduitLock;
-use crate::modrinth::ModrinthAPI;
 use console::style;
-use std::collections::HashSet;
-use std::fs;
-use std::path::Path;
+use conduit_cli::core::io::{load_config, load_lock};
+use conduit_cli::core::lister::build_list_report;
+use conduit_cli::core::paths::CorePaths;
+use conduit_cli::lock::ConduitLock;
+use conduit_cli::modrinth::ModrinthAPI;
 
 pub async fn run(_api: &ModrinthAPI) -> Result<(), Box<dyn std::error::Error>> {
-    let config_content =
-        fs::read_to_string("conduit.json").map_err(|_| "❌ No conduit.json found.")?;
-    let config: ConduitConfig = serde_json::from_str(&config_content)?;
-    let lock = ConduitLock::load();
-
-    let mods_dir = Path::new("mods");
-    let mut files_on_disk = HashSet::new();
-    if mods_dir.exists() {
-        for entry in fs::read_dir(mods_dir)? {
-            let entry = entry?;
-            if let Some(name) = entry.file_name().to_str() {
-                files_on_disk.insert(name.to_string());
-            }
-        }
-    }
+    let paths = CorePaths::from_project_dir(".")?;
+    let config = load_config(&paths)?;
+    let lock = load_lock(&paths)?;
+    let report = build_list_report(&paths, &config, &lock)?;
 
     println!("\n{}", style("Project Dependencies:").bold().underlined());
 
-    let mut missing_mods = Vec::new();
-    let mut tracked_files = HashSet::new();
-
     for (slug, version) in &config.mods {
         if let Some(locked) = lock.locked_mods.get(slug) {
-            tracked_files.insert(locked.filename.clone());
-
-            let status = if files_on_disk.contains(&locked.filename) {
+            let status = if report.files_on_disk.contains(&locked.filename) {
                 style("✔").green()
             } else {
-                missing_mods.push(slug.clone());
                 style("✘").red()
             };
 
@@ -46,9 +28,8 @@ pub async fn run(_api: &ModrinthAPI) -> Result<(), Box<dyn std::error::Error>> {
                 style(format!("({})", version)).dim()
             );
 
-            print_deps(slug, &lock, &mut tracked_files, &files_on_disk, 1);
+            print_deps(slug, &lock, &report.files_on_disk, 1);
         } else {
-            missing_mods.push(slug.clone());
             println!(
                 "{} {} {}",
                 style("?").yellow(),
@@ -58,16 +39,11 @@ pub async fn run(_api: &ModrinthAPI) -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    let orphans: Vec<_> = files_on_disk
-        .iter()
-        .filter(|f| !tracked_files.contains(*f))
-        .collect();
-
     println!("\n{}", style("Summary:").dim());
     println!("  Total root mods: {}", config.mods.len());
-    println!("  Files on disk:   {}", files_on_disk.len());
+    println!("  Files on disk:   {}", report.files_on_disk.len());
 
-    if !missing_mods.is_empty() {
+    if !report.missing_root_slugs.is_empty() {
         println!(
             "\n{} Some mods are missing. Run {} to fix it.",
             style("⚠").red(),
@@ -75,13 +51,13 @@ pub async fn run(_api: &ModrinthAPI) -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
-    if !orphans.is_empty() {
+    if !report.orphan_files.is_empty() {
         println!(
             "\n{} Found {} orphan files in /mods:",
             style("🗑").yellow(),
-            orphans.len()
+            report.orphan_files.len()
         );
-        for orphan in orphans {
+        for orphan in &report.orphan_files {
             println!("   - {}", style(orphan).dim().italic());
         }
         println!(
@@ -96,8 +72,7 @@ pub async fn run(_api: &ModrinthAPI) -> Result<(), Box<dyn std::error::Error>> {
 fn print_deps(
     slug: &str,
     lock: &ConduitLock,
-    tracked: &mut HashSet<String>,
-    disk: &HashSet<String>,
+    disk: &std::collections::HashSet<String>,
     indent: usize,
 ) {
     if let Some(locked) = lock.locked_mods.get(slug) {
@@ -105,8 +80,6 @@ fn print_deps(
             if let Some((dep_slug, dep_info)) =
                 lock.locked_mods.iter().find(|(_, m)| &m.id == dep_id)
             {
-                tracked.insert(dep_info.filename.clone());
-
                 let pipe = if indent > 0 { "└──" } else { "" };
                 let spacing = "    ".repeat(indent - 1);
 
@@ -125,7 +98,7 @@ fn print_deps(
                     style("(dep)").italic().dim()
                 );
 
-                print_deps(dep_slug, lock, tracked, disk, indent + 1);
+                print_deps(dep_slug, lock, disk, indent + 1);
             }
         }
     }

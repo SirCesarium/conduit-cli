@@ -1,102 +1,104 @@
-use crate::commands::add::install_recursive;
-use crate::config::ConduitConfig;
-use crate::lock::{ConduitLock, LockedMod};
-use crate::modrinth::ModrinthAPI;
-use crate::progress::ConduitProgress;
+use crate::ui::CliUi;
 use console::style;
-use futures_util::StreamExt;
-use std::fs;
-use std::io::Write;
-use std::path::Path;
+use conduit_cli::core::installer::extra_deps::ExtraDepsPolicy;
+use conduit_cli::core::installer::project::{sync_project, InstallProjectOptions};
+use conduit_cli::core::local_mods::find_missing_local_mods;
+use conduit_cli::core::paths::CorePaths;
+use conduit_cli::modrinth::ModrinthAPI;
+use inquire::Confirm;
 
-pub async fn run(api: &ModrinthAPI) -> Result<(), Box<dyn std::error::Error>> {
-    let config_content = fs::read_to_string("conduit.json")
-        .map_err(|_| "❌ No conduit.json found. Run 'conduit init' first.")?;
-    let mut config: ConduitConfig = serde_json::from_str(&config_content)?;
-    let mut lock = ConduitLock::load();
+pub async fn run(
+    api: &ModrinthAPI,
+    strict: bool,
+    force: bool,
+    yes: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let paths = CorePaths::from_project_dir(".")?;
 
-    println!(
-        "{}",
-        style("Checking for missing dependencies in lockfile...").dim()
-    );
+    if (strict || force) && !yes {
+        println!(
+            "{} {}",
+            style("WARNING:").yellow().bold(),
+            style("This operation can modify files and/or rewrite conduit.lock.").yellow()
+        );
 
-    let mods_to_check: Vec<String> = config.mods.keys().cloned().collect();
-    for slug in mods_to_check {
-        if !lock.locked_mods.contains_key(&slug) {
+        if strict {
             println!(
-                "{} Mod {} found in config but not in lock. Resolving...",
-                style("!").yellow(),
-                style(&slug).bold()
+                "{} {}",
+                style("•").yellow(),
+                style("--strict will remove unmanaged .jar files from ./mods").yellow()
             );
-            install_recursive(api, &slug, &mut config, &mut lock, true).await?;
+        }
+        if force {
+            println!(
+                "{} {}",
+                style("•").yellow(),
+                style("--force will rebuild conduit.lock from conduit.json").yellow()
+            );
+        }
+
+        let first = Confirm::new("Do you want to continue?")
+            .with_default(false)
+            .prompt()?;
+        if !first {
+            return Ok(());
+        }
+
+        let second = Confirm::new("Are you absolutely sure?")
+            .with_default(false)
+            .prompt()?;
+        if !second {
+            return Ok(());
         }
     }
 
-    println!(
-        "\n{}",
-        style("─── Syncing mods from lockfile").cyan().bold()
-    );
+    let report = find_missing_local_mods(&paths);
+    if let Ok(report) = report {
+        if !report.missing_files.is_empty() || !report.missing_lock_entries.is_empty() {
+            println!(
+                "{} Missing local mods in ./mods. Add them with:",
+                style("✘").red()
+            );
 
-    let cache_dir = dirs::data_local_dir()
-        .ok_or("❌ Could not find local data directory. Please check your OS environment.")?
-        .join("conduit")
-        .join("cache");
-    fs::create_dir_all(&cache_dir)?;
+            for filename in report.missing_files {
+                println!(
+                    "  {} {}",
+                    style("conduit add").yellow().bold(),
+                    style(format!("f:./{}", filename)).cyan()
+                );
+            }
 
-    let mods_dir = Path::new("mods");
-    fs::create_dir_all(mods_dir)?;
+            for key in report.missing_lock_entries {
+                println!(
+                    "  {} {}",
+                    style("conduit add").yellow().bold(),
+                    style(format!("f:<path-to-jar>  # for local mod '{}'", key)).cyan()
+                );
+            }
 
-    for locked_mod in lock.locked_mods.values() {
-        install_from_lock(locked_mod, &cache_dir, mods_dir).await?;
+            return Ok(());
+        }
     }
 
-    fs::write("conduit.json", serde_json::to_string_pretty(&config)?)?;
-    lock.save()?;
+    let mut ui = CliUi::new();
+
+    sync_project(
+        api,
+        &paths,
+        &mut ui,
+        InstallProjectOptions {
+            extra_deps_policy: ExtraDepsPolicy::Callback,
+            strict,
+            force,
+        },
+    )
+    .await?
+    .pruned_files
+    .into_iter()
+    .for_each(|f| {
+        println!("{} Removed unmanaged mod {}", style("✘").red(), style(f).dim());
+    });
 
     println!("\n{} Project is up to date!", style("✔").green());
-    Ok(())
-}
-
-async fn install_from_lock(
-    mod_data: &LockedMod,
-    cache_dir: &Path,
-    mods_dir: &Path,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let cached_path = cache_dir.join(format!("{}.jar", mod_data.hash));
-    let dest_path = mods_dir.join(&mod_data.filename);
-
-    if dest_path.exists() {
-        return Ok(());
-    }
-
-    if !cached_path.exists() {
-        let response = reqwest::get(&mod_data.url).await?;
-        let pb = ConduitProgress::download_style(response.content_length().unwrap_or(0));
-        pb.set_message(format!(
-            "{} Downloading {}...",
-            style("").cyan(),
-            style(&mod_data.filename).dim()
-        ));
-
-        let mut cache_file = fs::File::create(&cached_path)?;
-        let mut stream = response.bytes_stream();
-        while let Some(item) = stream.next().await {
-            let chunk = item?;
-            cache_file.write_all(&chunk)?;
-            pb.inc(chunk.len() as u64);
-        }
-        pb.finish_and_clear();
-    }
-
-    if dest_path.exists() {
-        fs::remove_file(&dest_path)?;
-    }
-    fs::hard_link(&cached_path, &dest_path)?;
-
-    println!(
-        "{} Linked {}",
-        style("🔗").dim(),
-        style(&mod_data.filename).green()
-    );
     Ok(())
 }
