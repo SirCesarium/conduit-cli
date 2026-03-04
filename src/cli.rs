@@ -39,4 +39,7 @@ pub enum Commands {
         input: String,
     },
     Install,
+    Remove {
+        input: String
+    },
 }

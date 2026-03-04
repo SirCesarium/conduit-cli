@@ -4,7 +4,7 @@ use crate::lock::{ConduitLock, LockedMod};
 use crate::modrinth::ModrinthAPI;
 use crate::progress::ConduitProgress;
 use async_recursion::async_recursion;
-use console::{style, Term};
+use console::{Term, style};
 use futures_util::StreamExt;
 use inquire::Select;
 use std::fs;
@@ -17,7 +17,7 @@ pub async fn run(api: &ModrinthAPI, input: String) -> Result<(), Box<dyn std::er
     let mut config: ConduitConfig = serde_json::from_str(&config_content)?;
     let mut lock = ConduitLock::load();
 
-    install_recursive(api, &input, &mut config, &mut lock).await?;
+    install_recursive(api, &input, &mut config, &mut lock, true).await?;
 
     fs::write("conduit.json", serde_json::to_string_pretty(&config)?)?;
     lock.save()?;
@@ -30,6 +30,7 @@ pub async fn install_recursive(
     input: &str,
     config: &mut ConduitConfig,
     lock: &mut ConduitLock,
+    is_root: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let parts: Vec<&str> = input.split('@').collect();
     let slug_or_id = parts[0];
@@ -37,7 +38,21 @@ pub async fn install_recursive(
     let project = api.get_project(slug_or_id).await?;
     let current_slug = project.slug;
 
-    if lock.locked_mods.contains_key(&current_slug) {
+    if is_root && config.mods.contains_key(&current_slug) {
+        println!("{} Mod {} is already installed", style("ℹ").cyan(), style(&current_slug).bold());
+        return Ok(());
+    }
+
+    if !is_root && lock.locked_mods.contains_key(&current_slug) {
+        return Ok(());
+    }
+
+    if is_root && lock.locked_mods.contains_key(&current_slug) {
+        config.mods.insert(
+            current_slug.clone(),
+            "latest".to_string(), 
+        );
+        println!("{} Added {} as dependency", style("✔").green(), style(&current_slug).bold());
         return Ok(());
     }
 
@@ -79,7 +94,11 @@ pub async fn install_recursive(
     if !cached_path.exists() {
         let response = reqwest::get(&file.url).await?;
         let pb = ConduitProgress::download_style(response.content_length().unwrap_or(file.size));
-        pb.set_message(format!("{} {}", style("").cyan(), style(&file.filename).dim()));
+        pb.set_message(format!(
+            "{} {}",
+            style("").cyan(),
+            style(&file.filename).dim()
+        ));
 
         let mut cache_file = fs::File::create(&cached_path)?;
         let mut stream = response.bytes_stream();
@@ -96,10 +115,12 @@ pub async fn install_recursive(
     }
     fs::hard_link(&cached_path, &dest_path)?;
 
-    config.mods.insert(
-        current_slug.clone(),
-        selected_version.version_number.clone(),
-    );
+    if is_root {
+        config.mods.insert(
+            current_slug.clone(),
+            selected_version.version_number.clone(),
+        );
+    }
 
     let mut current_deps = Vec::new();
     for dep in &selected_version.dependencies {
@@ -123,7 +144,7 @@ pub async fn install_recursive(
     );
 
     for dep_id in current_deps {
-        install_recursive(api, &dep_id, config, lock).await?;
+        install_recursive(api, &dep_id, config, lock, false).await?;
     }
 
     crawl_extra_dependencies(api, &dest_path, config, lock, &current_slug).await?;
@@ -148,7 +169,12 @@ async fn crawl_extra_dependencies(
         Err(_) => return Ok(()),
     };
 
-    let loader_filter = config.loader.split('@').next().unwrap_or("neoforge").to_string();
+    let loader_filter = config
+        .loader
+        .split('@')
+        .next()
+        .unwrap_or("neoforge")
+        .to_string();
     let mc_version = config.mc_version.clone();
 
     for tech_id in internal_deps {
@@ -160,8 +186,13 @@ async fn crawl_extra_dependencies(
             continue;
         }
 
-        let facets = format!("[[\"categories:{}\"],[\"versions:{}\"]]", loader_filter, mc_version);
-        let search_results = api.search(&tech_id, 5, 0, "relevance", Some(facets)).await?;
+        let facets = format!(
+            "[[\"categories:{}\"],[\"versions:{}\"]]",
+            loader_filter, mc_version
+        );
+        let search_results = api
+            .search(&tech_id, 5, 0, "relevance", Some(facets))
+            .await?;
 
         let mut options: Vec<String> = Vec::new();
         options.push(style("X Skip dependency").red().to_string());
@@ -169,7 +200,12 @@ async fn crawl_extra_dependencies(
         let mut exact_match_slug = None;
         if let Ok(exact) = api.get_project(&tech_id).await {
             exact_match_slug = Some(exact.slug.clone());
-            options.push(format!("{} {} ({})", style("!").yellow(), exact.title, exact.slug));
+            options.push(format!(
+                "{} {} ({})",
+                style("!").yellow(),
+                exact.title,
+                exact.slug
+            ));
         }
 
         for hit in &search_results.hits {
@@ -178,14 +214,18 @@ async fn crawl_extra_dependencies(
             }
         }
 
-        if options.len() <= 1 { continue; }
+        if options.len() <= 1 {
+            continue;
+        }
 
         let term = Term::stdout();
-        let prompt = format!("Dependency {} needed for {}:", style(&tech_id).bold().yellow(), style(jar_path.file_name().unwrap().to_str().unwrap()).dim());
-        
-        let selection = Select::new(&prompt, options)
-            .with_page_size(7)
-            .prompt();
+        let prompt = format!(
+            "Dependency {} needed for {}:",
+            style(&tech_id).bold().yellow(),
+            style(jar_path.file_name().unwrap().to_str().unwrap()).dim()
+        );
+
+        let selection = Select::new(&prompt, options).with_page_size(7).prompt();
 
         term.clear_last_lines(1)?;
 
@@ -194,13 +234,15 @@ async fn crawl_extra_dependencies(
                 let slug_to_install = if choice.contains("!") {
                     exact_match_slug.unwrap()
                 } else {
-                    search_results.hits.iter()
+                    search_results
+                        .hits
+                        .iter()
                         .find(|hit| choice.contains(&hit.slug))
                         .map(|hit| hit.slug.clone())
                         .unwrap_or(tech_id.clone())
                 };
 
-                install_recursive(api, &slug_to_install, config, lock).await?;
+                install_recursive(api, &slug_to_install, config, lock, false).await?;
 
                 if let Some(installed_mod) = lock.locked_mods.get(&slug_to_install) {
                     let installed_id = installed_mod.id.clone();

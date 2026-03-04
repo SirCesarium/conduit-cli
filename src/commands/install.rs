@@ -28,7 +28,7 @@ pub async fn run(api: &ModrinthAPI) -> Result<(), Box<dyn std::error::Error>> {
                 style("!").yellow(),
                 style(&slug).bold()
             );
-            install_recursive(api, &slug, &mut config, &mut lock).await?;
+            install_recursive(api, &slug, &mut config, &mut lock, true).await?;
         }
     }
 

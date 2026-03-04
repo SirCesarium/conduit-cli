@@ -48,5 +48,10 @@ async fn main() {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
+        Commands::Remove { input } => {
+            if let Err(e) = commands::remove::run(input).await {
+                eprintln!("{} {}", style("Error:").red().bold(), e);
+            }
+        }
     }
 }
