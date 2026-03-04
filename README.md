@@ -1,6 +1,6 @@
 # conduit-cli
 
-A lightning-fast Minecraft mod manager for the terminal. Built in Rust for maximum performance and cross-platform compatibility.
+A lightning-fast Minecraft mod manager built in Rust.
 
 ---
 
