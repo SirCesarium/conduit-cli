@@ -9,6 +9,7 @@ pub struct ConduitConfig {
     pub mods: BTreeMap<String, String>,
     pub settings: Settings,
     pub gui_settings: GuiSettings,
+    pub scripts: BTreeMap<String, String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -49,6 +50,7 @@ impl Default for ConduitConfig {
                     port: "same".to_string(),
                 },
             },
+            scripts: BTreeMap::new(),
         }
     }
 }
