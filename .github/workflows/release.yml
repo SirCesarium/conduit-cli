@@ -75,13 +75,13 @@ jobs:
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             cargo install cargo-wix
-            cargo wix --no-build --target ${{ matrix.target }} --features cli
+            cargo wix --no-build --target ${{ matrix.target }}
             cp target/wix/*.msi target/${{ matrix.target }}/release/
           fi
           if [ "${{ matrix.target }}" = "x86_64-unknown-linux-gnu" ]; then
             cargo install cargo-deb cargo-generate-rpm
-            cargo deb --no-build --target ${{ matrix.target }} -- --features cli
-            cargo generate-rpm --target ${{ matrix.target }} --features cli
+            cargo deb --no-build --target ${{ matrix.target }}
+            cargo generate-rpm --target ${{ matrix.target }}
             cp target/${{ matrix.target }}/debian/*.deb target/${{ matrix.target }}/release/
             cp target/${{ matrix.target }}/generate-rpm/*.rpm target/${{ matrix.target }}/release/
           fi
