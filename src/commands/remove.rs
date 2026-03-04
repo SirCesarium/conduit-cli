@@ -57,8 +57,8 @@ pub async fn run(input: String) -> Result<(), Box<dyn std::error::Error>> {
 
     let all_locked_slugs: Vec<String> = lock.locked_mods.keys().cloned().collect();
     for slug in all_locked_slugs {
-        if !mods_to_keep.contains(&slug) {
-            if let Some(mod_data) = lock.locked_mods.remove(&slug) {
+        if !mods_to_keep.contains(&slug)
+            && let Some(mod_data) = lock.locked_mods.remove(&slug) {
                 let dest_path = std::path::Path::new("mods").join(&mod_data.filename);
                 if dest_path.exists() {
                     fs::remove_file(dest_path)?;
@@ -69,7 +69,6 @@ pub async fn run(input: String) -> Result<(), Box<dyn std::error::Error>> {
                     style(&slug).dim().italic()
                 );
             }
-        }
     }
 
     fs::write("conduit.json", serde_json::to_string_pretty(&config)?)?;

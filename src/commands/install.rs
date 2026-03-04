@@ -46,7 +46,7 @@ pub async fn run(api: &ModrinthAPI) -> Result<(), Box<dyn std::error::Error>> {
     let mods_dir = Path::new("mods");
     fs::create_dir_all(mods_dir)?;
 
-    for (_slug, locked_mod) in &lock.locked_mods {
+    for locked_mod in lock.locked_mods.values() {
         install_from_lock(locked_mod, &cache_dir, mods_dir).await?;
     }
 

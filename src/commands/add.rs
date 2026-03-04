@@ -124,11 +124,10 @@ pub async fn install_recursive(
 
     let mut current_deps = Vec::new();
     for dep in &selected_version.dependencies {
-        if dep.dependency_type == "required" {
-            if let Some(proj_id) = &dep.project_id {
+        if dep.dependency_type == "required"
+            && let Some(proj_id) = &dep.project_id {
                 current_deps.push(proj_id.clone());
             }
-        }
     }
 
     lock.locked_mods.insert(
@@ -246,11 +245,10 @@ async fn crawl_extra_dependencies(
 
                 if let Some(installed_mod) = lock.locked_mods.get(&slug_to_install) {
                     let installed_id = installed_mod.id.clone();
-                    if let Some(parent) = lock.locked_mods.get_mut(parent_slug) {
-                        if !parent.dependencies.contains(&installed_id) {
+                    if let Some(parent) = lock.locked_mods.get_mut(parent_slug)
+                        && !parent.dependencies.contains(&installed_id) {
                             parent.dependencies.push(installed_id);
                         }
-                    }
                 }
             }
             _ => (),
