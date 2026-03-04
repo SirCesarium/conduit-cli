@@ -33,5 +33,13 @@ pub async fn download_to_path(
         });
     }
 
+    if let Some(t) = total {
+        callbacks.on_download_progress(DownloadProgress {
+            bytes_downloaded: t,
+            total_bytes: Some(t),
+            filename: filename.to_string(),
+        });
+    }
+
     Ok(())
 }

@@ -1,7 +1,9 @@
 use crate::progress::ConduitProgress;
-use console::{style, Term};
 use conduit_cli::core::events::{CoreCallbacks, CoreEvent, DownloadProgress};
-use conduit_cli::core::installer::extra_deps::{ExtraDepChooser, ExtraDepDecision, ExtraDepRequest};
+use conduit_cli::core::installer::extra_deps::{
+    ExtraDepChooser, ExtraDepDecision, ExtraDepRequest,
+};
+use console::{Term, style};
 use indicatif::ProgressBar;
 use inquire::Select;
 
@@ -49,6 +51,11 @@ impl CliUi {
 
 impl CoreCallbacks for CliUi {
     fn on_event(&mut self, event: CoreEvent) {
+        if let Some(pb) = self.download_pb.take() {
+            pb.finish_and_clear();
+            self.download_filename = None;
+        }
+
         match event {
             CoreEvent::Info(msg) => {
                 if let Some(title) = msg.strip_prefix("Installing ") {
@@ -58,7 +65,7 @@ impl CoreCallbacks for CliUi {
                         style(title).magenta().bold()
                     );
                 } else {
-                    println!("{} {}", style("ℹ").cyan(), msg);
+                    println!("{} {}", style("!").cyan(), msg);
                 }
             }
             CoreEvent::Warning(msg) => println!("{} {}", style("!").yellow(), msg),
@@ -75,7 +82,7 @@ impl CoreCallbacks for CliUi {
             CoreEvent::AlreadyInstalled { slug } => {
                 println!(
                     "{} Mod {} is already installed",
-                    style("ℹ").cyan(),
+                    style("!").cyan(),
                     style(slug).bold()
                 );
             }
@@ -90,10 +97,16 @@ impl CoreCallbacks for CliUi {
 
     fn on_download_progress(&mut self, progress: DownloadProgress) {
         self.ensure_download_pb(&progress.filename, progress.total_bytes);
+
         if let Some(pb) = &self.download_pb {
             pb.set_position(progress.bytes_downloaded);
-            if let Some(total) = progress.total_bytes {
-                pb.set_length(total);
+
+            if Some(progress.bytes_downloaded) == progress.total_bytes {
+                if let Some(pb) = self.download_pb.take() {
+                    pb.finish_and_clear();
+                }
+                self.download_filename = None;
+                self.download_total = None;
             }
         }
     }
@@ -106,12 +119,7 @@ impl ExtraDepChooser for CliUi {
 
         for c in &request.candidates {
             if c.is_exact_match {
-                options.push(format!(
-                    "{} {} ({})",
-                    style("!").yellow(),
-                    c.title,
-                    c.slug
-                ));
+                options.push(format!("{} {} ({})", style("!").yellow(), c.title, c.slug));
             } else {
                 options.push(format!("{} ({})", c.title, c.slug));
             }
@@ -123,18 +131,14 @@ impl ExtraDepChooser for CliUi {
             style(&request.parent_filename).dim()
         );
 
-        let selection = Select::new(&prompt, options)
-            .with_page_size(7)
-            .prompt();
+        let selection = Select::new(&prompt, options).with_page_size(7).prompt();
 
         let _ = self.term.clear_last_lines(1);
 
         match selection {
             Ok(choice) if !choice.contains("Skip dependency") => {
-                if let Some(candidate) = request
-                    .candidates
-                    .iter()
-                    .find(|c| choice.contains(&c.slug))
+                if let Some(candidate) =
+                    request.candidates.iter().find(|c| choice.contains(&c.slug))
                 {
                     ExtraDepDecision::InstallSlug(candidate.slug.clone())
                 } else {
