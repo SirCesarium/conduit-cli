@@ -1,6 +1,6 @@
 [package]
 name = "conduit-cli"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 authors = ["SirCesarium"]
 description = "A lightning-fast Minecraft mod manager"
@@ -27,7 +27,7 @@ toml = "1.0.3"
 zip = "8.2.0"
 
 [features]
-default = []
+default = ["cli"]
 cli = ["dep:clap", "dep:console", "dep:inquire", "dep:indicatif", "dep:comfy-table"]
 
 [[bin]]
