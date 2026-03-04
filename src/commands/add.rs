@@ -25,7 +25,7 @@ pub async fn run(api: &ModrinthAPI, input: String) -> Result<(), Box<dyn std::er
 }
 
 #[async_recursion]
-async fn install_recursive(
+pub async fn install_recursive(
     api: &ModrinthAPI,
     input: &str,
     config: &mut ConduitConfig,

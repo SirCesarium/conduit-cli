@@ -44,7 +44,9 @@ async fn main() {
             }
         }
         Commands::Install => {
-
+            if let Err(e) = commands::install::run(&api).await {
+                eprintln!("{} {}", style("Error:").red().bold(), e);
+            }
         }
     }
 }
