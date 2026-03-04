@@ -9,6 +9,17 @@ pub struct NeoForgeMetadata {
     pub dependencies: Option<std::collections::HashMap<String, Vec<Dependency>>>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct NeoForgeModsList {
+    pub mods: Option<Vec<NeoForgeModEntry>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct NeoForgeModEntry {
+    #[serde(rename = "modId")]
+    pub mod_id: String,
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct Dependency {
     #[serde(rename = "modId")]
@@ -84,5 +95,33 @@ impl JarInspector {
         required_deps.dedup();
 
         Ok(required_deps)
+    }
+
+    pub fn extract_primary_mod_id<P: AsRef<Path>>(
+        path: P,
+    ) -> Result<Option<String>, Box<dyn std::error::Error>> {
+        let file = File::open(path)?;
+        let mut archive = ZipArchive::new(file)?;
+
+        let toml_content = if let Ok(mut toml_file) = archive.by_name("META-INF/neoforge.mods.toml") {
+            let mut content = String::new();
+            toml_file.read_to_string(&mut content)?;
+            content
+        } else if let Ok(mut toml_file) = archive.by_name("META-INF/mods.toml") {
+            let mut content = String::new();
+            toml_file.read_to_string(&mut content)?;
+            content
+        } else {
+            return Ok(None);
+        };
+
+        let decoded: NeoForgeModsList = toml::from_str(&toml_content)?;
+        let mod_id = decoded
+            .mods
+            .unwrap_or_default()
+            .into_iter()
+            .next()
+            .map(|m| m.mod_id);
+        Ok(mod_id)
     }
 }
