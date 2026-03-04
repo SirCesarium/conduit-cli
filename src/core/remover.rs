@@ -32,8 +32,8 @@ pub fn remove_mod(
     let mut purged = Vec::new();
     let all_locked_slugs: Vec<String> = lock.locked_mods.keys().cloned().collect();
     for locked_slug in all_locked_slugs {
-        if !mods_to_keep.contains(&locked_slug) {
-            if let Some(mod_data) = lock.locked_mods.remove(&locked_slug) {
+        if !mods_to_keep.contains(&locked_slug)
+            && let Some(mod_data) = lock.locked_mods.remove(&locked_slug) {
                 let dest_path = paths.mods_dir().join(&mod_data.filename);
                 if dest_path.exists() {
                     fs::remove_file(dest_path)?;
@@ -41,7 +41,6 @@ pub fn remove_mod(
                 purged.push(locked_slug.clone());
                 callbacks.on_event(CoreEvent::Purged { slug: locked_slug });
             }
-        }
     }
 
     Ok(Some(RemoveReport {

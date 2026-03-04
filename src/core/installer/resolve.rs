@@ -11,7 +11,7 @@ use crate::lock::{ConduitLock, LockedMod};
 use crate::modrinth::ModrinthAPI;
 use async_recursion::async_recursion;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 pub struct InstallOptions {
     pub is_root: bool,
@@ -52,6 +52,7 @@ pub async fn install_mod(
     .await
 }
 
+#[allow(clippy::too_many_arguments)]
 #[async_recursion(?Send)]
 async fn install_recursive(
     api: &ModrinthAPI,
@@ -71,9 +72,7 @@ async fn install_recursive(
     let current_slug = project.slug;
 
     if is_root && config.mods.contains_key(&current_slug) {
-        ui.on_event(CoreEvent::AlreadyInstalled {
-            slug: current_slug,
-        });
+        ui.on_event(CoreEvent::AlreadyInstalled { slug: current_slug });
         return Ok(());
     }
 
@@ -85,16 +84,11 @@ async fn install_recursive(
         config
             .mods
             .insert(current_slug.clone(), "latest".to_string());
-        ui.on_event(CoreEvent::AddedAsDependency {
-            slug: current_slug,
-        });
+        ui.on_event(CoreEvent::AddedAsDependency { slug: current_slug });
         return Ok(());
     }
 
-    ui.on_event(CoreEvent::Info(format!(
-        "Installing {}",
-        project.title
-    )));
+    ui.on_event(CoreEvent::Info(format!("Installing {}", project.title)));
 
     let loader_filter = config.loader.split('@').next().unwrap_or("fabric");
 
@@ -110,7 +104,9 @@ async fn install_recursive(
     } else {
         versions.first()
     }
-    .ok_or_else(|| CoreError::NoCompatibleVersion { slug: current_slug.clone() })?;
+    .ok_or_else(|| CoreError::NoCompatibleVersion {
+        slug: current_slug.clone(),
+    })?;
 
     let file = selected_version
         .files
@@ -136,18 +132,18 @@ async fn install_recursive(
     fs::hard_link(&cached_path, &dest_path)?;
 
     if is_root {
-        config
-            .mods
-            .insert(current_slug.clone(), selected_version.version_number.clone());
+        config.mods.insert(
+            current_slug.clone(),
+            selected_version.version_number.clone(),
+        );
     }
 
     let mut current_deps = Vec::new();
     for dep in &selected_version.dependencies {
-        if dep.dependency_type == "required" {
-            if let Some(proj_id) = &dep.project_id {
+        if dep.dependency_type == "required"
+            && let Some(proj_id) = &dep.project_id {
                 current_deps.push(proj_id.clone());
             }
-        }
     }
 
     lock.locked_mods.insert(
@@ -178,17 +174,16 @@ async fn install_recursive(
 
     if let ExtraDepsPolicy::Skip = extra_deps_policy {
     } else {
-        crawl_extra_dependencies(
+        let mut ctx = ResolveContext {
             api,
             paths,
-            &dest_path,
             config,
             lock,
-            &current_slug,
             ui,
-            extra_deps_policy,
-        )
-        .await?;
+            extra_deps_policy: extra_deps_policy.clone(),
+        };
+
+        crawl_extra_dependencies(&mut ctx, &dest_path, &current_slug).await?;
     }
 
     ui.on_event(CoreEvent::Installed {
@@ -199,33 +194,38 @@ async fn install_recursive(
     Ok(())
 }
 
+pub struct ResolveContext<'a> {
+    pub api: &'a ModrinthAPI,
+    pub paths: &'a CorePaths,
+    pub config: &'a mut ConduitConfig,
+    pub lock: &'a mut ConduitLock,
+    pub ui: &'a mut dyn InstallerUi,
+    pub extra_deps_policy: ExtraDepsPolicy,
+}
+
 async fn crawl_extra_dependencies(
-    api: &ModrinthAPI,
-    paths: &CorePaths,
-    jar_path: &PathBuf,
-    config: &mut ConduitConfig,
-    lock: &mut ConduitLock,
+    ctx: &mut ResolveContext<'_>,
+    jar_path: &Path,
     parent_slug: &str,
-    ui: &mut dyn InstallerUi,
-    extra_deps_policy: ExtraDepsPolicy,
 ) -> CoreResult<()> {
     let internal_deps = match JarInspector::inspect_neoforge(jar_path) {
         Ok(deps) => deps,
         Err(_) => return Ok(()),
     };
 
-    let loader_filter = config
+    let loader_filter = ctx
+        .config
         .loader
         .split('@')
         .next()
         .unwrap_or("neoforge")
         .to_string();
-    let mc_version = config.mc_version.clone();
+    let mc_version = ctx.config.mc_version.clone();
 
     for tech_id in internal_deps {
-        let is_installed = lock.locked_mods.values().any(|m| m.id == tech_id)
-            || lock.locked_mods.contains_key(&tech_id)
-            || config.mods.contains_key(&tech_id);
+        let is_installed = ctx.lock.locked_mods.values().any(|m| m.id == tech_id)
+            || ctx.lock.locked_mods.contains_key(&tech_id)
+            || ctx.config.mods.contains_key(&tech_id);
 
         if is_installed {
             continue;
@@ -235,14 +235,15 @@ async fn crawl_extra_dependencies(
             "[[\"categories:{}\"],[\"versions:{}\"]]",
             loader_filter, mc_version
         );
-        let search_results = api
+        let search_results = ctx
+            .api
             .search(&tech_id, 5, 0, "relevance", Some(facets))
             .await?;
 
         let mut candidates: Vec<ExtraDepCandidate> = Vec::new();
 
         let mut exact_match_slug = None;
-        if let Ok(exact) = api.get_project(&tech_id).await {
+        if let Ok(exact) = ctx.api.get_project(&tech_id).await {
             exact_match_slug = Some(exact.slug.clone());
             candidates.push(ExtraDepCandidate {
                 title: exact.title,
@@ -271,13 +272,13 @@ async fn crawl_extra_dependencies(
             .unwrap_or("unknown file")
             .to_string();
 
-        let decision = match extra_deps_policy {
+        let decision = match ctx.extra_deps_policy {
             ExtraDepsPolicy::Skip => ExtraDepDecision::Skip,
             ExtraDepsPolicy::AutoExactMatch => exact_match_slug
                 .clone()
                 .map(ExtraDepDecision::InstallSlug)
                 .unwrap_or(ExtraDepDecision::Skip),
-            ExtraDepsPolicy::Callback => ui.choose_extra_dep(ExtraDepRequest {
+            ExtraDepsPolicy::Callback => ctx.ui.choose_extra_dep(ExtraDepRequest {
                 tech_id: tech_id.clone(),
                 parent_slug: parent_slug.to_string(),
                 parent_filename,
@@ -290,29 +291,28 @@ async fn crawl_extra_dependencies(
             ExtraDepDecision::InstallSlug(s) => s,
         };
 
-        ui.on_event(CoreEvent::Info(format!(
+        ctx.ui.on_event(CoreEvent::Info(format!(
             "Installing extra dependency {slug_to_install}"
         )));
 
         install_recursive(
-            api,
-            paths,
+            ctx.api,
+            ctx.paths,
             &slug_to_install,
-            config,
-            lock,
-            ui,
+            ctx.config,
+            ctx.lock,
+            ctx.ui,
             false,
-            extra_deps_policy.clone(),
+            ctx.extra_deps_policy.clone(),
         )
         .await?;
 
-        if let Some(installed_mod) = lock.locked_mods.get(&slug_to_install) {
+        if let Some(installed_mod) = ctx.lock.locked_mods.get(&slug_to_install) {
             let installed_id = installed_mod.id.clone();
-            if let Some(parent) = lock.locked_mods.get_mut(parent_slug) {
-                if !parent.dependencies.contains(&installed_id) {
+            if let Some(parent) = ctx.lock.locked_mods.get_mut(parent_slug)
+                && !parent.dependencies.contains(&installed_id) {
                     parent.dependencies.push(installed_id);
                 }
-            }
         }
     }
 

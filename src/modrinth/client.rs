@@ -21,3 +21,9 @@ impl ModrinthAPI {
         }
     }
 }
+
+impl Default for ModrinthAPI {
+    fn default() -> Self {
+        Self::new()
+    }
+}
