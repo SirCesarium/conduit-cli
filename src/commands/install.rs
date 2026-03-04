@@ -1,13 +1,15 @@
 use crate::config::ConduitConfig;
+use crate::inspector::JarInspector;
 use crate::lock::{ConduitLock, LockedMod};
 use crate::modrinth::ModrinthAPI;
 use crate::progress::ConduitProgress;
 use async_recursion::async_recursion;
-use console::style;
+use console::{style, Term};
 use futures_util::StreamExt;
+use inquire::Select;
 use std::fs;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 pub async fn run(api: &ModrinthAPI, input: String) -> Result<(), Box<dyn std::error::Error>> {
     let config_content = fs::read_to_string("conduit.json")
@@ -40,8 +42,8 @@ async fn install_recursive(
     }
 
     println!(
-        "{} Resolving: {}",
-        style("↳").dim(),
+        "\n{} {}",
+        style("─── Installing").dim(),
         style(&project.title).magenta().bold()
     );
 
@@ -77,7 +79,7 @@ async fn install_recursive(
     if !cached_path.exists() {
         let response = reqwest::get(&file.url).await?;
         let pb = ConduitProgress::download_style(response.content_length().unwrap_or(file.size));
-        pb.set_message(format!("Downloading {}", style(&file.filename).yellow()));
+        pb.set_message(format!("{} {}", style("").cyan(), style(&file.filename).dim()));
 
         let mut cache_file = fs::File::create(&cached_path)?;
         let mut stream = response.bytes_stream();
@@ -124,10 +126,94 @@ async fn install_recursive(
         install_recursive(api, &dep_id, config, lock).await?;
     }
 
+    crawl_extra_dependencies(api, &dest_path, config, lock, &current_slug).await?;
+
     println!(
         "{} Installed {}",
         style("✔").green(),
         style(&project.title).bold()
     );
+    Ok(())
+}
+
+async fn crawl_extra_dependencies(
+    api: &ModrinthAPI,
+    jar_path: &PathBuf,
+    config: &mut ConduitConfig,
+    lock: &mut ConduitLock,
+    parent_slug: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let internal_deps = match JarInspector::inspect_neoforge(jar_path) {
+        Ok(deps) => deps,
+        Err(_) => return Ok(()),
+    };
+
+    let loader_filter = config.loader.split('@').next().unwrap_or("neoforge").to_string();
+    let mc_version = config.mc_version.clone();
+
+    for tech_id in internal_deps {
+        let is_installed = lock.locked_mods.values().any(|m| m.id == tech_id)
+            || lock.locked_mods.contains_key(&tech_id)
+            || config.mods.contains_key(&tech_id);
+
+        if is_installed {
+            continue;
+        }
+
+        let facets = format!("[[\"categories:{}\"],[\"versions:{}\"]]", loader_filter, mc_version);
+        let search_results = api.search(&tech_id, 5, 0, "relevance", Some(facets)).await?;
+
+        let mut options: Vec<String> = Vec::new();
+        options.push(style("X Skip dependency").red().to_string());
+
+        let mut exact_match_slug = None;
+        if let Ok(exact) = api.get_project(&tech_id).await {
+            exact_match_slug = Some(exact.slug.clone());
+            options.push(format!("{} {} ({})", style("!").yellow(), exact.title, exact.slug));
+        }
+
+        for hit in &search_results.hits {
+            if Some(&hit.slug) != exact_match_slug.as_ref() {
+                options.push(format!("{} ({})", hit.title, hit.slug));
+            }
+        }
+
+        if options.len() <= 1 { continue; }
+
+        let term = Term::stdout();
+        let prompt = format!("Dependency {} needed for {}:", style(&tech_id).bold().yellow(), style(jar_path.file_name().unwrap().to_str().unwrap()).dim());
+        
+        let selection = Select::new(&prompt, options)
+            .with_page_size(7)
+            .prompt();
+
+        term.clear_last_lines(1)?;
+
+        match selection {
+            Ok(choice) if !choice.contains("Skip dependency") => {
+                let slug_to_install = if choice.contains("!") {
+                    exact_match_slug.unwrap()
+                } else {
+                    search_results.hits.iter()
+                        .find(|hit| choice.contains(&hit.slug))
+                        .map(|hit| hit.slug.clone())
+                        .unwrap_or(tech_id.clone())
+                };
+
+                install_recursive(api, &slug_to_install, config, lock).await?;
+
+                if let Some(installed_mod) = lock.locked_mods.get(&slug_to_install) {
+                    let installed_id = installed_mod.id.clone();
+                    if let Some(parent) = lock.locked_mods.get_mut(parent_slug) {
+                        if !parent.dependencies.contains(&installed_id) {
+                            parent.dependencies.push(installed_id);
+                        }
+                    }
+                }
+            }
+            _ => (),
+        }
+    }
+
     Ok(())
 }
