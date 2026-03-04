@@ -20,8 +20,8 @@ pub enum Commands {
         #[arg(short, long)]
         facets: Option<String>,
     },
-    #[command(alias = "add", alias = "i")]
-    Install {
+    #[command(alias = "a")]
+    Add {
         input: String,
     },
     Init {

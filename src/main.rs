@@ -28,7 +28,7 @@ async fn main() {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
-        Commands::Install { input } => {
+        Commands::Add { input } => {
             if let Err(e) = commands::install::run(&api, input).await {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
