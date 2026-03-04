@@ -42,4 +42,5 @@ pub enum Commands {
     Remove {
         input: String
     },
+    List,
 }

@@ -53,5 +53,10 @@ async fn main() {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
+        Commands::List => {
+            if let Err(e) = commands::list::run(&api).await {
+                eprintln!("{} {}", style("Error:").red().bold(), e);
+            }
+        }
     }
 }
