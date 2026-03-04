@@ -38,6 +38,5 @@ pub enum Commands {
     CheckJarDeps {
         input: String,
     },
-    Install
-    
+    Install,
 }

@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ConduitConfig {
     pub name: String,
     pub mc_version: String,
     pub loader: String,
-    pub mods: HashMap<String, String>,
+    pub mods: BTreeMap<String, String>,
     pub settings: Settings,
     pub gui_settings: GuiSettings,
 }
@@ -36,7 +36,7 @@ impl Default for ConduitConfig {
             name: "conduit-server".to_string(),
             mc_version: "1.21.1".to_string(),
             loader: "neoforge@latest".to_string(),
-            mods: HashMap::new(),
+            mods: BTreeMap::new(),
             settings: Settings {
                 auto_update: false,
                 updates_warning: false,
