@@ -1,10 +1,10 @@
 use crate::ui::CliUi;
-use console::style;
 use conduit_cli::core::installer::extra_deps::ExtraDepsPolicy;
-use conduit_cli::core::installer::project::{sync_project, InstallProjectOptions};
+use conduit_cli::core::installer::project::{InstallProjectOptions, sync_project};
 use conduit_cli::core::local_mods::find_missing_local_mods;
 use conduit_cli::core::paths::CorePaths;
 use conduit_cli::modrinth::ModrinthAPI;
+use console::style;
 use inquire::Confirm;
 
 pub async fn run(
@@ -53,31 +53,31 @@ pub async fn run(
     }
 
     let report = find_missing_local_mods(&paths);
-    if let Ok(report) = report {
-        if !report.missing_files.is_empty() || !report.missing_lock_entries.is_empty() {
+    if let Ok(report) = report
+        && (!report.missing_files.is_empty() || !report.missing_lock_entries.is_empty())
+    {
+        println!(
+            "{} Missing local mods in ./mods. Add them with:",
+            style("✘").red()
+        );
+
+        for filename in report.missing_files {
             println!(
-                "{} Missing local mods in ./mods. Add them with:",
-                style("✘").red()
+                "  {} {}",
+                style("conduit add").yellow().bold(),
+                style(format!("f:./{}", filename)).cyan()
             );
-
-            for filename in report.missing_files {
-                println!(
-                    "  {} {}",
-                    style("conduit add").yellow().bold(),
-                    style(format!("f:./{}", filename)).cyan()
-                );
-            }
-
-            for key in report.missing_lock_entries {
-                println!(
-                    "  {} {}",
-                    style("conduit add").yellow().bold(),
-                    style(format!("f:<path-to-jar>  # for local mod '{}'", key)).cyan()
-                );
-            }
-
-            return Ok(());
         }
+
+        for key in report.missing_lock_entries {
+            println!(
+                "  {} {}",
+                style("conduit add").yellow().bold(),
+                style(format!("f:<path-to-jar>  # for local mod '{}'", key)).cyan()
+            );
+        }
+
+        return Ok(());
     }
 
     let mut ui = CliUi::new();
@@ -96,7 +96,11 @@ pub async fn run(
     .pruned_files
     .into_iter()
     .for_each(|f| {
-        println!("{} Removed unmanaged mod {}", style("✘").red(), style(f).dim());
+        println!(
+            "{} Removed unmanaged mod {}",
+            style("✘").red(),
+            style(f).dim()
+        );
     });
 
     println!("\n{} Project is up to date!", style("✔").green());

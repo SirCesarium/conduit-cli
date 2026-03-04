@@ -1,8 +1,8 @@
-use console::style;
 use conduit_cli::core::events::{CoreCallbacks, CoreEvent};
 use conduit_cli::core::io::{load_config, load_lock, save_config, save_lock};
 use conduit_cli::core::paths::CorePaths;
 use conduit_cli::core::remover::remove_mod;
+use console::style;
 
 pub async fn run(input: String) -> Result<(), Box<dyn std::error::Error>> {
     let paths = CorePaths::from_project_dir(".")?;
@@ -61,11 +61,8 @@ struct CliCallbacks;
 
 impl CoreCallbacks for CliCallbacks {
     fn on_event(&mut self, event: CoreEvent) {
-        match event {
-            CoreEvent::Purged { slug } => {
-                println!("{} Purged {}", style("🗑").dim(), style(slug).dim().italic());
-            }
-            _ => {}
+        if let CoreEvent::Purged { slug } = event {
+            println!("{} Purged {}", style("🗑").dim(), style(slug).dim().italic());
         }
     }
 }
