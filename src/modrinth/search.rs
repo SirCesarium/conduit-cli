@@ -20,11 +20,14 @@ impl ModrinthAPI {
         if let Some(f) = facets {
             params.push(("facets", f));
         }
-        let url = Url::parse_with_params(&format!("{}/search", self.base_url), &params).unwrap();
+        let url = Url::parse_with_params(&format!("{}/search", self.base_url), &params)
+            .expect("Critical: Failed to build Modrinth search URL");
+
         self.client
             .get(url)
             .send()
             .await?
+            .error_for_status()?
             .json::<SearchResult>()
             .await
     }

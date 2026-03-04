@@ -9,10 +9,12 @@ impl ModrinthAPI {
     pub fn new() -> Self {
         let mut headers = HeaderMap::new();
         headers.insert(USER_AGENT, HeaderValue::from_static("Conduit-CLI"));
+
         let client = reqwest::Client::builder()
             .default_headers(headers)
             .build()
-            .unwrap();
+            .expect("Failed to create HTTP client");
+
         Self {
             client,
             base_url: "https://api.modrinth.com/v2".to_string(),

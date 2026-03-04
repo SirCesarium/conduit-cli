@@ -22,6 +22,7 @@ impl ModrinthAPI {
             .get(url)
             .send()
             .await?
+            .error_for_status()?
             .json::<Vec<Version>>()
             .await
     }

@@ -39,7 +39,11 @@ pub async fn install_recursive(
     let current_slug = project.slug;
 
     if is_root && config.mods.contains_key(&current_slug) {
-        println!("{} Mod {} is already installed", style("ℹ").cyan(), style(&current_slug).bold());
+        println!(
+            "{} Mod {} is already installed",
+            style("ℹ").cyan(),
+            style(&current_slug).bold()
+        );
         return Ok(());
     }
 
@@ -48,11 +52,14 @@ pub async fn install_recursive(
     }
 
     if is_root && lock.locked_mods.contains_key(&current_slug) {
-        config.mods.insert(
-            current_slug.clone(),
-            "latest".to_string(), 
+        config
+            .mods
+            .insert(current_slug.clone(), "latest".to_string());
+        println!(
+            "{} Added {} as dependency",
+            style("✔").green(),
+            style(&current_slug).bold()
         );
-        println!("{} Added {} as dependency", style("✔").green(), style(&current_slug).bold());
         return Ok(());
     }
 
@@ -77,11 +84,18 @@ pub async fn install_recursive(
         .files
         .iter()
         .find(|f| f.primary)
-        .unwrap_or(&selected_version.files[0]);
+        .or(selected_version.files.first())
+        .ok_or_else(|| {
+            format!(
+                "No files available for version {}",
+                selected_version.version_number
+            )
+        })?;
+
     let sha1 = file.hashes.get("sha1").cloned().unwrap_or_default();
 
     let cache_dir = dirs::data_local_dir()
-        .unwrap()
+        .ok_or("❌ Could not find local data directory")?
         .join("conduit")
         .join("cache");
     fs::create_dir_all(&cache_dir)?;
@@ -125,9 +139,10 @@ pub async fn install_recursive(
     let mut current_deps = Vec::new();
     for dep in &selected_version.dependencies {
         if dep.dependency_type == "required"
-            && let Some(proj_id) = &dep.project_id {
-                current_deps.push(proj_id.clone());
-            }
+            && let Some(proj_id) = &dep.project_id
+        {
+            current_deps.push(proj_id.clone());
+        }
     }
 
     lock.locked_mods.insert(
@@ -218,10 +233,14 @@ async fn crawl_extra_dependencies(
         }
 
         let term = Term::stdout();
+        let file_name = jar_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("unknown file");
         let prompt = format!(
             "Dependency {} needed for {}:",
             style(&tech_id).bold().yellow(),
-            style(jar_path.file_name().unwrap().to_str().unwrap()).dim()
+            style(file_name).dim()
         );
 
         let selection = Select::new(&prompt, options).with_page_size(7).prompt();
@@ -231,7 +250,7 @@ async fn crawl_extra_dependencies(
         match selection {
             Ok(choice) if !choice.contains("Skip dependency") => {
                 let slug_to_install = if choice.contains("!") {
-                    exact_match_slug.unwrap()
+                    exact_match_slug.clone().unwrap_or(tech_id.clone())
                 } else {
                     search_results
                         .hits
@@ -246,9 +265,10 @@ async fn crawl_extra_dependencies(
                 if let Some(installed_mod) = lock.locked_mods.get(&slug_to_install) {
                     let installed_id = installed_mod.id.clone();
                     if let Some(parent) = lock.locked_mods.get_mut(parent_slug)
-                        && !parent.dependencies.contains(&installed_id) {
-                            parent.dependencies.push(installed_id);
-                        }
+                        && !parent.dependencies.contains(&installed_id)
+                    {
+                        parent.dependencies.push(installed_id);
+                    }
                 }
             }
             _ => (),

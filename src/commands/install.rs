@@ -38,7 +38,7 @@ pub async fn run(api: &ModrinthAPI) -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let cache_dir = dirs::data_local_dir()
-        .unwrap()
+        .ok_or("❌ Could not find local data directory. Please check your OS environment.")?
         .join("conduit")
         .join("cache");
     fs::create_dir_all(&cache_dir)?;
