@@ -20,6 +20,11 @@ jobs:
             artifact_name: conduit
             release_name: conduit-linux-amd64
             use_cross: false
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            artifact_name: conduit
+            release_name: conduit-linux-musl-amd64
+            use_cross: false
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
             artifact_name: conduit
@@ -30,6 +35,16 @@ jobs:
             artifact_name: conduit.exe
             release_name: conduit-windows-amd64.exe
             use_cross: false
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            artifact_name: conduit
+            release_name: conduit-macos-arm64
+            use_cross: false
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            artifact_name: conduit
+            release_name: conduit-macos-intel
+            use_cross: false
 
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +53,10 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+
+      - name: Install MUSL Tools
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
 
       - name: Install Cross
         if: matrix.use_cross
@@ -52,6 +71,23 @@ jobs:
           fi
         shell: bash
 
+      - name: Create Packages
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cargo install cargo-wix
+            cargo wix --no-build --target ${{ matrix.target }}
+            cp target/wix/*.msi target/${{ matrix.target }}/release/
+          fi
+          if [ "${{ matrix.target }}" = "x86_64-unknown-linux-gnu" ]; then
+            cargo install cargo-deb cargo-generate-rpm
+            cargo deb --no-build --target ${{ matrix.target }}
+            cargo rpm build --target ${{ matrix.target }}
+            cp target/${{ matrix.target }}/debian/*.deb target/${{ matrix.target }}/release/
+            cp target/${{ matrix.target }}/generate-rpm/*.rpm target/${{ matrix.target }}/release/
+          fi
+        shell: bash
+        continue-on-error: true
+
       - name: Prepare Artifact
         run: |
           cd target/${{ matrix.target }}/release
@@ -61,7 +97,11 @@ jobs:
       - name: Release Binaries
         uses: softprops/action-gh-release@v2
         with:
-          files: target/${{ matrix.target }}/release/${{ matrix.release_name }}
+          files: |
+            target/${{ matrix.target }}/release/${{ matrix.release_name }}
+            target/${{ matrix.target }}/release/*.msi
+            target/${{ matrix.target }}/release/*.deb
+            target/${{ matrix.target }}/release/*.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

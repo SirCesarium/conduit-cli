@@ -1,7 +1,12 @@
 [package]
 name = "conduit-cli"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
+authors = ["SirCesarium"]
+description = "A lightning-fast Minecraft mod manager"
+repository = "https://github.com/SirCesarium/conduit-cli"
+homepage = "https://github.com/SirCesarium/conduit-cli"
+license = "MIT"
 
 [dependencies]
 async-recursion = "1.1.1"
@@ -29,3 +34,19 @@ cli = ["dep:clap", "dep:console", "dep:inquire", "dep:indicatif", "dep:comfy-tab
 name = "conduit"
 path = "src/main.rs"
 required-features = ["cli"]
+
+
+[package.metadata.wix]
+upgrade-guid = "74f470da-07f1-44f1-9262-1681c2f47aa1"
+path = true
+
+[package.metadata.deb]
+maintainer = "SirCesarium"
+assets = [
+    ["target/release/conduit", "/usr/bin/conduit", "755"],
+]
+
+[package.metadata.generate-rpm]
+assets = [
+    { source = "target/release/conduit", dest = "/usr/bin/conduit", mode = "755" },
+]
