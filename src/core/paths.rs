@@ -31,6 +31,10 @@ impl CorePaths {
         &self.config_path
     }
 
+    pub fn project_dir(&self) -> &Path {
+        &self.project_dir
+    }
+
     pub fn lock_path(&self) -> &Path {
         &self.lock_path
     }
