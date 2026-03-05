@@ -7,6 +7,8 @@ pub enum CoreEvent {
     AlreadyInstalled { slug: String },
     LinkedFile { filename: String },
     Purged { slug: String },
+    TaskStarted(String),
+    TaskFinished,
 }
 
 #[derive(Debug, Clone)]

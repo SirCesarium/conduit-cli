@@ -10,6 +10,7 @@ use inquire::Select;
 pub struct CliUi {
     term: Term,
     download_pb: Option<ProgressBar>,
+    spinner_pb: Option<ProgressBar>,
     download_filename: Option<String>,
     download_total: Option<u64>,
 }
@@ -19,6 +20,7 @@ impl CliUi {
         Self {
             term: Term::stdout(),
             download_pb: None,
+            spinner_pb: None,
             download_filename: None,
             download_total: None,
         }
@@ -91,6 +93,19 @@ impl CoreCallbacks for CliUi {
             }
             CoreEvent::Purged { slug } => {
                 println!("{} Purged {}", style("🗑").dim(), style(slug).dim().italic());
+            }
+            CoreEvent::TaskStarted(msg) => {
+                if let Some(pb) = self.spinner_pb.take() {
+                    pb.finish_and_clear();
+                }
+
+                let pb = ConduitProgress::simple_spinner(msg);
+                self.spinner_pb = Some(pb);
+            }
+            CoreEvent::TaskFinished => {
+                if let Some(pb) = self.spinner_pb.take() {
+                    pb.finish_and_clear();
+                }
             }
         }
     }

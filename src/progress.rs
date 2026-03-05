@@ -25,7 +25,6 @@ impl ConduitProgress {
         pb
     }
 
-    #[allow(dead_code)]
     pub fn simple_spinner(msg: String) -> ProgressBar {
         let pb = ProgressBar::new_spinner();
         pb.enable_steady_tick(Duration::from_millis(120));
