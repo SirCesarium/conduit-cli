@@ -1,7 +1,28 @@
-use clap::{Parser, Subcommand};
+use clap::{
+    Parser, Subcommand,
+    builder::{
+        Styles,
+        styling::{AnsiColor, Effects},
+    },
+};
+
+fn get_styles() -> Styles {
+    Styles::styled()
+        .header(AnsiColor::Yellow.on_default() | Effects::BOLD)
+        .usage(AnsiColor::Cyan.on_default() | Effects::BOLD)
+        .literal(AnsiColor::Magenta.on_default() | Effects::BOLD)
+        .placeholder(AnsiColor::Blue.on_default())
+}
 
 #[derive(Parser)]
-#[command(name = "conduit")]
+#[command(
+    name = "conduit",
+    author = env!("CARGO_PKG_AUTHORS"),
+    version = env!("CARGO_PKG_VERSION"),
+    about = "A lightning-fast Minecraft mod manager built in Rust.",
+    styles = get_styles(),
+    arg_required_else_help = true,
+)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
@@ -15,56 +36,87 @@ pub enum VerifyTarget {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    /// 🔍 Search for mods on Modrinth
     Search {
         query: String,
-        #[arg(short, long, default_value_t = 10)]
+        #[arg(
+            short,
+            long,
+            default_value_t = 10,
+            help = "Number of results to return"
+        )]
         limit: i32,
-        #[arg(short, long, default_value_t = 1)]
+        #[arg(
+            short,
+            long,
+            default_value_t = 1,
+            help = "Page number for paginated results"
+        )]
         page: i32,
-        #[arg(short, long, default_value = "relevance")]
+        #[arg(
+            short,
+            long,
+            default_value = "relevance",
+            help = "Sorting method for results"
+        )]
         sort: String,
-        #[arg(short, long)]
+        #[arg(short, long, help = "Facets to filter results")]
         facets: Option<String>,
     },
-    #[command(alias = "a")]
+
+    /// ➕ Add a new mod to the project using a Modrinth slug or local file path
+    #[command(
+        alias = "a",
+        long_about = "Adds a mod to your project. Supports Modrinth slugs or paths.\n\nExample:\n  conduit add mod-slug\n  conduit add f:./local-mod.jar"
+    )]
     Add {
         input: String,
 
-        #[arg(long, num_args = 1..)]
+        #[arg(long, num_args = 1.., help = "List of dependencies to add")]
         deps: Vec<String>,
     },
+
+    /// ✨ Initialize a new conduit project in the current directory
     Init {
-        #[arg(short, long)]
+        #[arg(short, long, help = "Name of the project")]
         name: Option<String>,
 
-        #[arg(short, long)]
+        #[arg(short, long, help = "Loader to use for the project")]
         loader: Option<String>,
 
-        #[arg(short, long)]
+        #[arg(short, long, help = "Use default settings without prompts")]
         yes: bool,
     },
+
+    /// 🕷️  Crawl a JAR file to identify its dependencies
     #[command(alias = "crawl")]
-    CheckJarDeps {
-        input: String,
-    },
+    CheckJarDeps { input: String },
+
+    /// 📥 Synchronize and install all mods defined in conduit.toml
     Install {
-        #[arg(long)]
+        #[arg(long, help = "Enable strict dependency checking")]
         strict: bool,
 
-        #[arg(long)]
+        #[arg(long, help = "Force installation of mods")]
         force: bool,
 
-        #[arg(short = 'y', long)]
+        #[arg(short = 'y', long, help = "Skip confirmation prompts")]
         yes: bool,
     },
+
+    /// 🛠️  Verify the integrity of installed mods
     Verify {
         #[command(subcommand)]
         target: Option<VerifyTarget>,
     },
-    Remove {
-        input: String
-    },
+
+    /// 🗑️  Remove a mod from the project
+    Remove { input: String },
+
+    /// 📋 List all currently managed mods
     List,
+
+    /// ⚙️  Install the server loader (NeoForge, etc.) and accept EULA
     #[command(alias = "il")]
     InstallLoader,
 }
