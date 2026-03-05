@@ -61,5 +61,10 @@ async fn main() {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
+        Commands::InstallLoader => {
+            if let Err(e) = commands::install_loader::run().await {
+                eprintln!("{} {}", style("Error:").red().bold(), e);
+            }
+        }
     }
 }

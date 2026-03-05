@@ -65,4 +65,6 @@ pub enum Commands {
         input: String
     },
     List,
+    #[command(alias = "il")]
+    InstallLoader,
 }

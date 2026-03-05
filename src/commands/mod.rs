@@ -6,3 +6,4 @@ pub mod install;
 pub mod verify;
 pub mod remove;
 pub mod list;
+pub mod install_loader;
