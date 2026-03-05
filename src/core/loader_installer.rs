@@ -27,14 +27,14 @@ pub async fn install_loader(
         .download_installer(
             &config.mc_version,
             &loader_version,
-            &paths.project_dir(),
+            paths.project_dir(),
             callbacks,
         )
         .await?;
 
     let installer_path = loader.execute_installer(&loader_dir, callbacks).await?;
 
-    loader.post_install(&installer_path, &paths.project_dir(), callbacks).await?;
+    loader.post_install(&installer_path, paths.project_dir(), callbacks).await?;
 
     Ok(())
 }

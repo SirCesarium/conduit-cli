@@ -124,7 +124,7 @@ pub async fn post_install_neoforge(
     std::fs::write(eula_path, "eula=true")?;
 
     let log_names = ["neoforge-installer.jar.log", "installer.log"];
-    
+
     for log_name in log_names {
         let log_path = install_path.join(log_name);
         if log_path.exists() {
@@ -136,12 +136,10 @@ pub async fn post_install_neoforge(
     {
         use std::os::unix::fs::PermissionsExt;
         let run_sh = install_path.join("run.sh");
-        if run_sh.exists() {
-            if let Ok(metadata) = std::fs::metadata(&run_sh) {
-                let mut perms = metadata.permissions();
-                perms.set_mode(0o755); // rwxr-xr-x
-                let _ = std::fs::set_permissions(&run_sh, perms);
-            }
+        if let Ok(metadata) = std::fs::metadata(&run_sh) {
+            let mut perms = metadata.permissions();
+            perms.set_mode(0o755); // rwxr-xr-x
+            let _ = std::fs::set_permissions(&run_sh, perms);
         }
     }
 
