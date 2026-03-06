@@ -1,11 +1,12 @@
 use crate::progress::ConduitProgress;
-use conduit_cli::core::events::{CoreCallbacks, CoreEvent, DownloadProgress};
+use conduit_cli::core::events::{CoreCallbacks, CoreEvent, DownloadProgress, LogLevel};
 use conduit_cli::core::installer::extra_deps::{
     ExtraDepChooser, ExtraDepDecision, ExtraDepRequest,
 };
 use console::{Term, style};
 use indicatif::ProgressBar;
 use inquire::Select;
+use std::io::Write;
 
 pub struct CliUi {
     term: Term,
@@ -53,12 +54,52 @@ impl CliUi {
 
 impl CoreCallbacks for CliUi {
     fn on_event(&mut self, event: CoreEvent) {
-        if let Some(pb) = self.download_pb.take() {
-            pb.finish_and_clear();
-            self.download_filename = None;
+        match event {
+            CoreEvent::WorldPreparationProgress { percentage } => {
+                if let Some(pb) = &self.spinner_pb {
+                    pb.set_position(percentage as u64);
+                    pb.set_message(format!("{}", style("🌍 Preparing world...").cyan()));
+                }
+                return;
+            }
+            CoreEvent::ChatPromptRequested { sender } => {
+                print!("\r{} ", style(format!("<{}>", sender)).yellow());
+                let _ = std::io::stdout().flush();
+                return;
+            }
+            _ => {
+                if let Some(pb) = self.download_pb.take() {
+                    pb.finish_and_clear();
+                    self.download_filename = None;
+                }
+            }
         }
 
         match event {
+            CoreEvent::StartingServer => {
+                if let Some(pb) = self.spinner_pb.take() {
+                    pb.finish_and_clear();
+                }
+                self.spinner_pb =
+                    Some(ConduitProgress::simple_spinner("Starting server...".into()));
+            }
+            CoreEvent::WorldPreparationStarted => {
+                if let Some(pb) = self.spinner_pb.take() {
+                    pb.finish_and_clear();
+                }
+                let pb = ConduitProgress::download_style(100);
+                pb.set_message(format!(
+                    "{} {}",
+                    style("🌍").cyan(),
+                    style("Preparing world").dim()
+                ));
+                self.spinner_pb = Some(pb);
+            }
+            CoreEvent::WorldPreparationFinished => {
+                if let Some(pb) = self.spinner_pb.take() {
+                    pb.finish_and_clear();
+                }
+            }
             CoreEvent::Info(msg) => {
                 if let Some(title) = msg.strip_prefix("Installing ") {
                     println!(
@@ -69,30 +110,6 @@ impl CoreCallbacks for CliUi {
                 } else {
                     println!("{} {}", style("!").cyan(), msg);
                 }
-            }
-            CoreEvent::Warning(msg) => println!("{} {}", style("!").yellow(), msg),
-            CoreEvent::Installed { slug: _, title } => {
-                println!("{} Installed {}", style("✔").green(), style(title).bold());
-            }
-            CoreEvent::AddedAsDependency { slug } => {
-                println!(
-                    "{} Added {} as dependency",
-                    style("✔").green(),
-                    style(slug).bold()
-                );
-            }
-            CoreEvent::AlreadyInstalled { slug } => {
-                println!(
-                    "{} Mod {} is already installed",
-                    style("!").cyan(),
-                    style(slug).bold()
-                );
-            }
-            CoreEvent::LinkedFile { filename } => {
-                println!("{} Linked {}", style("🔗").dim(), style(filename).green());
-            }
-            CoreEvent::Purged { slug } => {
-                println!("{} Purged {}", style("🗑").dim(), style(slug).dim().italic());
             }
             CoreEvent::TaskStarted(msg) => {
                 if let Some(pb) = self.spinner_pb.take() {
@@ -107,15 +124,96 @@ impl CoreCallbacks for CliUi {
                     pb.finish_and_clear();
                 }
             }
+            CoreEvent::Warning(msg) => println!("{} {}", style("!").yellow(), msg),
+            CoreEvent::Installed { slug: _, title } => {
+                println!("{} Installed {}", style("✔").green(), style(title).bold())
+            }
+            CoreEvent::AddedAsDependency { slug } => println!(
+                "{} Added {} as dependency",
+                style("✔").green(),
+                style(slug).bold()
+            ),
+            CoreEvent::AlreadyInstalled { slug } => println!(
+                "{} Mod {} is already installed",
+                style("!").cyan(),
+                style(slug).bold()
+            ),
+            CoreEvent::LinkedFile { filename } => {
+                println!("{} Linked {}", style("🔗").dim(), style(filename).green())
+            }
+            CoreEvent::Purged { slug } => {
+                println!("{} Purged {}", style("🗑").dim(), style(slug).dim().italic())
+            }
+            CoreEvent::ChatModeStarted { sender } => {
+                println!(
+                    "\n{}",
+                    style(format!("─── Chat Mode Enabled (Sender: {}) ───\n", sender))
+                        .cyan()
+                        .bold()
+                );
+                println!(
+                    "Type {}, {} or {} to exit chat mode\n",
+                    style(":exit").yellow(),
+                    style(":e").yellow(),
+                    style(":q").yellow()
+                );
+                print!("{} ", style(format!("<{}>", sender)).yellow());
+                let _ = std::io::stdout().flush();
+            }
+            CoreEvent::ChatModeStopped => {
+                let _ = self.term.clear_line();
+                println!("\n{}", style("─── Chat Mode Disabled ───").magenta().bold());
+            }
+            CoreEvent::ChatMessageSent { sender, message } => println!(
+                "{} {}",
+                style(format!("<{}>", sender)).yellow().bold(),
+                style(message).white()
+            ),
+            CoreEvent::ServerLogEvent {
+                level,
+                message,
+                timestamp,
+            } => {
+                let time_fmt = style(timestamp).dim();
+                match level {
+                    LogLevel::Chat => println!(
+                        "{} {} {}",
+                        time_fmt,
+                        style("💬").cyan(),
+                        style(message).cyan().bold()
+                    ),
+                    LogLevel::Info => println!("{} {}", time_fmt, message),
+                    LogLevel::Warning => println!(
+                        "{} {} {}",
+                        time_fmt,
+                        style("[!]").on_yellow().black(),
+                        style(message).yellow()
+                    ),
+                    LogLevel::Error => println!(
+                        "{} {} {}",
+                        time_fmt,
+                        style("✘").red().bold(),
+                        style(message).red().bold()
+                    ),
+                    LogLevel::Command => println!(
+                        "{} {} {}",
+                        time_fmt,
+                        style("⚡").magenta(),
+                        style(message).dim()
+                    ),
+                }
+            }
+            CoreEvent::Error(message) => eprintln!("{} {}", style("[✘]"), message),
+            CoreEvent::Success(message) => println!("{} {}", style("✔").green(), message),
+            CoreEvent::ServerStopEvent(message) => println!("{}", style(message).on_red()),
+            _ => {}
         }
     }
 
     fn on_download_progress(&mut self, progress: DownloadProgress) {
         self.ensure_download_pb(&progress.filename, progress.total_bytes);
-
         if let Some(pb) = &self.download_pb {
             pb.set_position(progress.bytes_downloaded);
-
             if Some(progress.bytes_downloaded) == progress.total_bytes {
                 if let Some(pb) = self.download_pb.take() {
                     pb.finish_and_clear();
@@ -131,35 +229,28 @@ impl ExtraDepChooser for CliUi {
     fn choose_extra_dep(&mut self, request: ExtraDepRequest) -> ExtraDepDecision {
         let mut options: Vec<String> = Vec::new();
         options.push(style("X Skip dependency").red().to_string());
-
         for c in &request.candidates {
-            if c.is_exact_match {
-                options.push(format!("{} {} ({})", style("!").yellow(), c.title, c.slug));
+            let entry = if c.is_exact_match {
+                format!("{} {} ({})", style("!").yellow(), c.title, c.slug)
             } else {
-                options.push(format!("{} ({})", c.title, c.slug));
-            }
+                format!("{} ({})", c.title, c.slug)
+            };
+            options.push(entry);
         }
-
         let prompt = format!(
             "Dependency {} needed for {}:",
             style(&request.tech_id).bold().yellow(),
             style(&request.parent_filename).dim()
         );
-
         let selection = Select::new(&prompt, options).with_page_size(7).prompt();
-
         let _ = self.term.clear_last_lines(1);
-
         match selection {
-            Ok(choice) if !choice.contains("Skip dependency") => {
-                if let Some(candidate) =
-                    request.candidates.iter().find(|c| choice.contains(&c.slug))
-                {
-                    ExtraDepDecision::InstallSlug(candidate.slug.clone())
-                } else {
-                    ExtraDepDecision::Skip
-                }
-            }
+            Ok(choice) if !choice.contains("Skip dependency") => request
+                .candidates
+                .iter()
+                .find(|c| choice.contains(&c.slug))
+                .map(|c| ExtraDepDecision::InstallSlug(c.slug.clone()))
+                .unwrap_or(ExtraDepDecision::Skip),
             _ => ExtraDepDecision::Skip,
         }
     }
