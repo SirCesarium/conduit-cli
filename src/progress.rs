@@ -10,28 +10,31 @@ impl ConduitProgress {
 
         pb.set_style(
             ProgressStyle::with_template(
-                "{spinner:.cyan} {msg} ⟪{raw_bar:20.cyan/blue}⟫ {percent}%"
+                "{spinner:.cyan} {msg} ⟪{raw_bar:20.cyan/blue}⟫ {percent}%",
             )
             .unwrap()
-            .with_key("raw_bar", |state: &indicatif::ProgressState, w: &mut dyn std::fmt::Write| {
-                let pct = state.fraction();
-                let fill_len = (pct * 20.0) as usize;
-                let fill = "≋".repeat(fill_len);
-                let empty = " ".repeat(20 - fill_len);
-                write!(w, "{}{}", fill, empty).unwrap();
-            })
-            .tick_strings(&["○", "◎", "◉", "◎", "○"])
+            .with_key(
+                "raw_bar",
+                |state: &indicatif::ProgressState, w: &mut dyn std::fmt::Write| {
+                    let pct = state.fraction();
+                    let fill_len = (pct * 20.0) as usize;
+                    let fill = "≋".repeat(fill_len);
+                    let empty = " ".repeat(20 - fill_len);
+                    write!(w, "{}{}", fill, empty).unwrap();
+                },
+            )
+            .tick_strings(&["⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"]),
         );
         pb
     }
 
     pub fn simple_spinner(msg: String) -> ProgressBar {
         let pb = ProgressBar::new_spinner();
-        pb.enable_steady_tick(Duration::from_millis(120));
+        pb.enable_steady_tick(Duration::from_millis(80));
         pb.set_style(
-            ProgressStyle::with_template("{spinner:.cyan} {msg}")
+            ProgressStyle::with_template("{spinner:.magenta} {msg} {elapsed_precise:.dim}")
                 .unwrap()
-                .tick_strings(&["◦", "◌", "○", "◎", "◉", "⚡"]),
+                .tick_strings(&["⣷", "⣯", "⣟", "⡿", "⢿", "⣻", "⣽", "⣾"]),
         );
         pb.set_message(msg);
         pb
