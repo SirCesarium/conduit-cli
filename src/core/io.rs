@@ -10,7 +10,8 @@ use std::fs;
 pub struct ConduitLock {
     pub version: i32,
     pub locked_mods: HashMap<String, LockedMod>,
-    pub loader_version: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub loader_version: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -46,7 +47,7 @@ impl ConduitLock {
         Ok(ConduitLock {
             version: 1,
             locked_mods: std::collections::HashMap::new(),
-            loader_version: String::from("219"),
+            loader_version: None,
         })
     }
 
