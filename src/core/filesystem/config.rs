@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, fmt};
 
 use serde::{Deserialize, Serialize};
 
@@ -7,6 +7,15 @@ use serde::{Deserialize, Serialize};
 pub enum InstanceType {
     Server,
     Client
+}
+
+impl fmt::Display for InstanceType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            InstanceType::Server => write!(f, "server"),
+            InstanceType::Client => write!(f, "client"),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

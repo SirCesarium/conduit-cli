@@ -1,3 +1,4 @@
+use conduit_cli::core::filesystem::config::InstanceType;
 use conduit_cli::core::initializer::{InitParams, init_project};
 use conduit_cli::core::paths::CorePaths;
 use console::style;
@@ -10,6 +11,7 @@ pub fn run(
     let paths = CorePaths::from_project_dir(".")?;
     let mut params = InitParams {
         name,
+        instance_type: None,
         mc_version: None,
         loader,
     };
@@ -36,6 +38,13 @@ pub fn run(
         params.name = Some(
             inquire::Text::new("Project name:")
                 .with_default(params.name.as_deref().unwrap_or(&default_name))
+                .prompt()?,
+        );
+
+        let options = vec![InstanceType::Server, InstanceType::Client];
+        params.instance_type = Some(
+            inquire::Select::new("Instance type:", options)
+                .with_starting_cursor(0)
                 .prompt()?,
         );
 

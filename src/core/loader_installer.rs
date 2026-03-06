@@ -1,18 +1,25 @@
+use crate::core::error::{CoreError, CoreResult};
 use crate::core::events::CoreCallbacks;
+use crate::core::filesystem::config::InstanceType;
 use crate::core::filesystem::lock::ConduitLock;
 use crate::core::paths::CorePaths;
 use crate::loaders::{Loader, LoaderInfo};
-use std::error::Error;
 
 pub async fn install_loader(
     paths: &CorePaths,
     callbacks: &mut dyn CoreCallbacks,
-) -> Result<(), Box<dyn Error>> {
+) -> CoreResult<()> {
     let config = ConduitLock::load_config(paths)?;
+
+    if let InstanceType::Client = config.instance_type {
+        return Err(CoreError::ServerOnlyFeature);
+    }
+
     let loader_info = LoaderInfo::parse(&config.loader);
+
     let loader = match loader_info.name.as_str() {
         "neoforge" => Loader::NeoForge,
-        _ => return Err(format!("Unsupported loader: {}", loader_info.name).into()),
+        _ => return Err(CoreError::UnsupportedLoader(loader_info.name)),
     };
 
     let loader_version = if loader_info.version == "latest" {

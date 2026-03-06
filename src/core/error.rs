@@ -12,6 +12,10 @@ pub enum CoreError {
     NoCompatibleVersion { slug: String },
     NoFilesForVersion { version: String },
     ProjectNotFound { slug: String },
+    UnsupportedLoader(String),
+    ServerOnlyFeature,
+    ClientOnlyFeature,
+    RuntimeError(String),
 }
 
 impl fmt::Display for CoreError {
@@ -31,6 +35,12 @@ impl fmt::Display for CoreError {
                 write!(f, "No files available for version {version}")
             }
             CoreError::ProjectNotFound { slug } => write!(f, "Project not found: {slug}"),
+            CoreError::UnsupportedLoader(loader) => {
+                write!(f, "Unsupported loader: {loader}")
+            }
+            CoreError::ServerOnlyFeature => write!(f, "This feature is only available for server instances"),
+            CoreError::ClientOnlyFeature => write!(f, "This feature is only available for client instances"),
+            CoreError::RuntimeError(e) => write!(f, "Runtime error: {e}"),
         }
     }
 }
@@ -68,3 +78,9 @@ impl From<reqwest::Error> for CoreError {
 }
 
 pub type CoreResult<T> = Result<T, CoreError>;
+
+impl From<Box<dyn std::error::Error>> for CoreError {
+    fn from(value: Box<dyn std::error::Error>) -> Self {
+        Self::RuntimeError(value.to_string())
+    }
+}
