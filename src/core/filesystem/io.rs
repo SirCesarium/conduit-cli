@@ -1,5 +1,5 @@
 use crate::core::error::{CoreError, CoreResult};
-use crate::core::filesystem::config::ConduitConfig;
+use crate::core::filesystem::config::{ConduitConfig, InstanceType};
 use crate::core::filesystem::lock::ConduitLock;
 use crate::core::paths::CorePaths;
 use std::collections::BTreeMap;
@@ -59,6 +59,7 @@ impl Default for ConduitConfig {
     fn default() -> Self {
         Self {
             name: "conduit-server".to_string(),
+            instance_type: InstanceType::Server,
             mc_version: "1.21.1".to_string(),
             loader: "neoforge@latest".to_string(),
             mods: BTreeMap::new(),
