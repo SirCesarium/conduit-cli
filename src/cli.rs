@@ -94,10 +94,10 @@ pub enum Commands {
 
     /// 📥 Synchronize and install all mods defined in conduit.toml
     Install {
-        #[arg(long, help = "Enable strict dependency checking")]
+        #[arg(long, help = "Removes undeclared dependencies in /mods")]
         strict: bool,
 
-        #[arg(long, help = "Force installation of mods")]
+        #[arg(long, help = "Rewrites conduit.lock content")]
         force: bool,
 
         #[arg(short = 'y', long, help = "Skip confirmation prompts")]
@@ -119,4 +119,13 @@ pub enum Commands {
     /// ⚙️  Install the server loader (NeoForge, etc.) and accept EULA
     #[command(alias = "il")]
     InstallLoader,
+
+    /// ▶️  Runs your server
+    Start {
+        #[arg(short = 'l', long, help = "Remove progress bars and show all raw logs")]
+        show_logs: bool,
+
+        #[arg(short = 'g', long, help = "Enables default Server JAR integrated GUI")]
+        show_gui: bool,
+    },
 }

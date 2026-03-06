@@ -66,5 +66,13 @@ async fn main() {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
+        Commands::Start {
+            show_logs,
+            show_gui,
+        } => {
+            if let Err(e) = commands::start::run(show_logs, show_gui).await {
+                eprintln!("{} {}", style("Error:").red().bold(), e);
+            }
+        }
     }
 }
