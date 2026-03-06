@@ -5,9 +5,9 @@ use crate::core::installer::download::download_to_path;
 use crate::core::installer::extra_deps::{
     ExtraDepCandidate, ExtraDepDecision, ExtraDepRequest, ExtraDepsPolicy, InstallerUi,
 };
+use crate::core::io::{ConduitLock, LockedMod};
 use crate::core::paths::CorePaths;
 use crate::inspector::JarInspector;
-use crate::lock::{ConduitLock, LockedMod};
 use crate::modrinth::ModrinthAPI;
 use async_recursion::async_recursion;
 use std::fs;

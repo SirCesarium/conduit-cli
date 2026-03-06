@@ -1,8 +1,8 @@
 use crate::core::error::CoreResult;
 use crate::core::events::{CoreCallbacks, CoreEvent};
 use crate::core::installer::download::download_to_path;
+use crate::core::io::LockedMod;
 use crate::core::paths::CorePaths;
-use crate::lock::LockedMod;
 use std::path::Path;
 
 pub async fn sync_from_lock(

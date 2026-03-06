@@ -1,11 +1,10 @@
 use crate::config::ConduitConfig;
 use crate::core::error::CoreResult;
 use crate::core::installer::extra_deps::{ExtraDepsPolicy, InstallerUi};
-use crate::core::installer::resolve::{install_mod, InstallOptions};
+use crate::core::installer::resolve::{InstallOptions, install_mod};
 use crate::core::installer::sync::sync_from_lock;
-use crate::core::io::{load_config, load_lock, save_config, save_lock};
+use crate::core::io::{ConduitLock, LockedMod};
 use crate::core::paths::CorePaths;
-use crate::lock::ConduitLock;
 use crate::modrinth::ModrinthAPI;
 use std::collections::HashSet;
 use std::fs;
@@ -38,8 +37,8 @@ pub async fn add_mod_to_project(
     ui: &mut dyn InstallerUi,
     options: InstallProjectOptions,
 ) -> CoreResult<()> {
-    let mut config: ConduitConfig = load_config(paths)?;
-    let mut lock = load_lock(paths)?;
+    let mut config: ConduitConfig = ConduitLock::load_config(paths)?;
+    let mut lock = ConduitLock::load_lock(paths)?;
 
     install_mod(
         api,
@@ -55,8 +54,8 @@ pub async fn add_mod_to_project(
     )
     .await?;
 
-    save_config(paths, &config)?;
-    save_lock(paths, &lock)?;
+    ConduitLock::save_config(paths, &config)?;
+    ConduitLock::save_lock(paths, &lock)?;
     Ok(())
 }
 
@@ -66,8 +65,8 @@ pub async fn sync_project(
     ui: &mut dyn InstallerUi,
     options: InstallProjectOptions,
 ) -> CoreResult<SyncProjectReport> {
-    let mut config: ConduitConfig = load_config(paths)?;
-    let mut lock = load_lock(paths)?;
+    let mut config: ConduitConfig = ConduitLock::load_config(paths)?;
+    let mut lock = ConduitLock::load_lock(paths)?;
 
     if options.force {
         lock = rebuild_lock_from_config(api, paths, ui, &config, &lock, &options).await?;
@@ -109,9 +108,7 @@ pub async fn sync_project(
 
     sync_from_lock(
         paths,
-        lock.locked_mods
-            .values()
-            .filter(|m| m.url != "local"),
+        lock.locked_mods.values().filter(|m| m.url != "local"),
         ui,
     )
     .await?;
@@ -121,8 +118,8 @@ pub async fn sync_project(
         report.pruned_files = prune_unmanaged_mods(paths, &config, &lock)?;
     }
 
-    save_config(paths, &config)?;
-    save_lock(paths, &lock)?;
+    ConduitLock::save_config(paths, &config)?;
+    ConduitLock::save_lock(paths, &lock)?;
 
     Ok(report)
 }
@@ -141,15 +138,21 @@ async fn rebuild_lock_from_config(
             .locked_mods
             .iter()
             .filter(|(_k, v)| v.url == "local")
-            .map(|(k, v)| (k.clone(), crate::lock::LockedMod {
-                id: v.id.clone(),
-                version_id: v.version_id.clone(),
-                filename: v.filename.clone(),
-                url: v.url.clone(),
-                hash: v.hash.clone(),
-                dependencies: v.dependencies.clone(),
-            }))
+            .map(|(k, v)| {
+                (
+                    k.clone(),
+                    LockedMod {
+                        id: v.id.clone(),
+                        version_id: v.version_id.clone(),
+                        filename: v.filename.clone(),
+                        url: v.url.clone(),
+                        hash: v.hash.clone(),
+                        dependencies: v.dependencies.clone(),
+                    },
+                )
+            })
             .collect(),
+        loader_version: existing_lock.loader_version.clone(),
     };
 
     let mut dummy_config = config.clone();

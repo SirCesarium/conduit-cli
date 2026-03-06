@@ -1,5 +1,5 @@
 use crate::core::events::CoreCallbacks;
-use crate::core::io::load_config;
+use crate::core::io::ConduitLock;
 use crate::core::paths::CorePaths;
 use crate::loaders::{Loader, LoaderInfo};
 use std::error::Error;
@@ -8,7 +8,7 @@ pub async fn install_loader(
     paths: &CorePaths,
     callbacks: &mut dyn CoreCallbacks,
 ) -> Result<(), Box<dyn Error>> {
-    let config = load_config(paths)?;
+    let config = ConduitLock::load_config(paths)?;
     let loader_info = LoaderInfo::parse(&config.loader);
     let loader = match loader_info.name.as_str() {
         "neoforge" => Loader::NeoForge,

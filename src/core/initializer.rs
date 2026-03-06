@@ -1,6 +1,6 @@
 use crate::config::ConduitConfig;
 use crate::core::error::CoreResult;
-use crate::core::io::save_config;
+use crate::core::io::ConduitLock;
 use crate::core::paths::CorePaths;
 
 pub struct InitParams {
@@ -22,6 +22,6 @@ pub fn init_project(paths: &CorePaths, params: InitParams) -> CoreResult<Conduit
         config.loader = l;
     }
 
-    save_config(paths, &config)?;
+    ConduitLock::save_config(paths, &config)?;
     Ok(config)
 }

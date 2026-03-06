@@ -1,9 +1,8 @@
 use crate::config::ConduitConfig;
 use crate::core::error::{CoreError, CoreResult};
-use crate::core::io::{load_config, load_lock, save_config, save_lock};
+use crate::core::io::{ConduitLock, LockedMod};
 use crate::core::paths::CorePaths;
 use crate::inspector::JarInspector;
-use crate::lock::{ConduitLock, LockedMod};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 use std::fs;
@@ -25,8 +24,8 @@ pub fn add_local_mods_to_project(
     paths: &CorePaths,
     jar_paths: Vec<PathBuf>,
 ) -> CoreResult<AddLocalModsReport> {
-    let mut config: ConduitConfig = load_config(paths)?;
-    let mut lock: ConduitLock = load_lock(paths)?;
+    let mut config: ConduitConfig = ConduitLock::load_config(paths)?;
+    let mut lock: ConduitLock = ConduitLock::load_lock(paths)?;
 
     fs::create_dir_all(paths.mods_dir())?;
 
@@ -79,8 +78,8 @@ pub fn add_local_mods_to_project(
         report.added.push(AddedLocalMod { key, filename });
     }
 
-    save_config(paths, &config)?;
-    save_lock(paths, &lock)?;
+    ConduitLock::save_config(paths, &config)?;
+    ConduitLock::save_lock(paths, &lock)?;
 
     Ok(report)
 }
@@ -92,8 +91,8 @@ pub struct MissingLocalReport {
 }
 
 pub fn find_missing_local_mods(paths: &CorePaths) -> CoreResult<MissingLocalReport> {
-    let config = load_config(paths)?;
-    let lock = load_lock(paths)?;
+    let config = ConduitLock::load_config(paths)?;
+    let lock = ConduitLock::load_lock(paths)?;
 
     let mut missing_files: BTreeSet<String> = BTreeSet::new();
     let mut missing_lock_entries: BTreeSet<String> = BTreeSet::new();
