@@ -1,5 +1,5 @@
+use crate::core::error::{CoreError, CoreResult};
 use crate::core::filesystem::config::ConduitConfig;
-use crate::core::error::CoreResult;
 use crate::core::filesystem::lock::{ConduitLock, LockedMod};
 use crate::core::installer::extra_deps::{ExtraDepsPolicy, InstallerUi};
 use crate::core::installer::resolve::{InstallOptions, install_mod};
@@ -8,6 +8,7 @@ use crate::core::paths::CorePaths;
 use crate::modrinth::ModrinthAPI;
 use std::collections::HashSet;
 use std::fs;
+use std::path::PathBuf;
 
 pub struct InstallProjectOptions {
     pub extra_deps_policy: ExtraDepsPolicy,
@@ -30,32 +31,67 @@ impl Default for InstallProjectOptions {
     }
 }
 
-pub async fn add_mod_to_project(
+pub async fn add_mods_to_project(
     api: &ModrinthAPI,
     paths: &CorePaths,
-    input: &str,
+    inputs: Vec<String>,
+    explicit_deps: Vec<String>,
     ui: &mut dyn InstallerUi,
     options: InstallProjectOptions,
 ) -> CoreResult<()> {
-    let mut config: ConduitConfig = ConduitLock::load_config(paths)?;
-    let mut lock = ConduitLock::load_lock(paths)?;
+    let mut local_paths = Vec::new();
+    let mut root_modrinth = Vec::new();
+    let mut dep_modrinth = Vec::new();
 
-    install_mod(
-        api,
-        paths,
-        input,
-        &mut config,
-        &mut lock,
-        ui,
-        InstallOptions {
-            is_root: true,
-            extra_deps_policy: options.extra_deps_policy,
-        },
-    )
-    .await?;
+    for input in inputs {
+        if let Some(path_str) = input.strip_prefix("f:").or_else(|| input.strip_prefix("file:")) {
+            local_paths.push(PathBuf::from(path_str));
+        } else {
+            root_modrinth.push(input);
+        }
+    }
 
-    ConduitLock::save_config(paths, &config)?;
-    ConduitLock::save_lock(paths, &lock)?;
+    for dep in explicit_deps {
+        if let Some(path_str) = dep.strip_prefix("f:").or_else(|| dep.strip_prefix("file:")) {
+            local_paths.push(PathBuf::from(path_str));
+        } else {
+            dep_modrinth.push(dep);
+        }
+    }
+
+    if !local_paths.is_empty() {
+        crate::core::local_mods::add_local_mods_to_project(paths, local_paths)?;
+    }
+
+    if !root_modrinth.is_empty() || !dep_modrinth.is_empty() {
+        let mut config = ConduitLock::load_config(paths)?;
+        let mut lock = ConduitLock::load_lock(paths)?;
+
+        for slug in root_modrinth.iter().chain(dep_modrinth.iter()) {
+            if let Err(e) = api.get_project(slug).await {
+                if e.status() == Some(reqwest::StatusCode::NOT_FOUND) {
+                    return Err(CoreError::ProjectNotFound { slug: slug.clone() });
+                }
+                return Err(e.into());
+            }
+        }
+
+        for slug in root_modrinth {
+            install_mod(api, paths, &slug, &mut config, &mut lock, ui, 
+                InstallOptions { is_root: true, extra_deps_policy: options.extra_deps_policy.clone() }
+            ).await?;
+        }
+
+        for slug in dep_modrinth {
+            install_mod(api, paths, &slug, &mut config, &mut lock, ui, 
+                InstallOptions { is_root: false, extra_deps_policy: options.extra_deps_policy.clone() }
+            ).await?;
+        }
+
+        ConduitLock::save_config(paths, &config)?;
+        ConduitLock::save_lock(paths, &lock)?;
+    }
+
     Ok(())
 }
 

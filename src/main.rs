@@ -25,8 +25,8 @@ async fn main() {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
-        Commands::Add { input, deps } => {
-            if let Err(e) = commands::add::run(&api, input, deps).await {
+        Commands::Add { inputs, deps } => {
+            if let Err(e) = commands::add::run(&api, inputs, deps).await {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }

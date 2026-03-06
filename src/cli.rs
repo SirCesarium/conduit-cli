@@ -70,7 +70,8 @@ pub enum Commands {
         long_about = "Adds a mod to your project. Supports Modrinth slugs or paths.\n\nExample:\n  conduit add mod-slug\n  conduit add f:./local-mod.jar"
     )]
     Add {
-        input: String,
+        #[arg(required = true, num_args = 1..)]
+        inputs: Vec<String>,
 
         #[arg(long, num_args = 1.., help = "List of dependencies to add")]
         deps: Vec<String>,

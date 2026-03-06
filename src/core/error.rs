@@ -11,6 +11,7 @@ pub enum CoreError {
     MissingLocalDataDir,
     NoCompatibleVersion { slug: String },
     NoFilesForVersion { version: String },
+    ProjectNotFound { slug: String },
 }
 
 impl fmt::Display for CoreError {
@@ -29,6 +30,7 @@ impl fmt::Display for CoreError {
             CoreError::NoFilesForVersion { version } => {
                 write!(f, "No files available for version {version}")
             }
+            CoreError::ProjectNotFound { slug } => write!(f, "Project not found: {slug}"),
         }
     }
 }
