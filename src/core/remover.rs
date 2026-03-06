@@ -1,7 +1,6 @@
-use crate::core::filesystem::config::ConduitConfig;
 use crate::core::error::CoreResult;
 use crate::core::events::{CoreCallbacks, CoreEvent};
-use crate::core::filesystem::lock::ConduitLock;
+use crate::core::io::project::{ConduitConfig, ConduitLock};
 use crate::core::paths::CorePaths;
 use std::collections::HashSet;
 use std::fs;

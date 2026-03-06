@@ -1,5 +1,5 @@
 use crate::core::events::CoreCallbacks;
-use crate::core::filesystem::lock::ConduitLock;
+use crate::core::io::project::ProjectFiles;
 use crate::core::paths::CorePaths;
 use crate::server_launcher::ServerLauncher;
 use std::error::Error;
@@ -10,7 +10,7 @@ pub async fn start_server(
     show_logs: bool,
     show_gui: bool,
 ) -> Result<(), Box<dyn Error>> {
-    let config = ConduitLock::load_config(paths)?;
+    let config = ProjectFiles::load_manifest(paths)?;
 
     let launcher = match config.loader.to_lowercase().as_str() {
         s if s.contains("neoforge") => ServerLauncher::Neoforge,

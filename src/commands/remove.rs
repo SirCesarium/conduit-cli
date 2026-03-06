@@ -1,13 +1,13 @@
 use conduit_cli::core::events::{CoreCallbacks, CoreEvent};
-use conduit_cli::core::filesystem::lock::ConduitLock;
+use conduit_cli::core::io::project::ProjectFiles;
 use conduit_cli::core::paths::CorePaths;
 use conduit_cli::core::remover::remove_mod;
 use console::style;
 
 pub async fn run(input: String) -> Result<(), Box<dyn std::error::Error>> {
     let paths = CorePaths::from_project_dir(".")?;
-    let mut config = ConduitLock::load_config(&paths)?;
-    let mut lock = ConduitLock::load_lock(&paths)?;
+    let mut config = ProjectFiles::load_manifest(&paths)?;
+    let mut lock = ProjectFiles::load_lock(&paths)?;
 
     if !config.mods.contains_key(&input) {
         println!(
@@ -50,8 +50,8 @@ pub async fn run(input: String) -> Result<(), Box<dyn std::error::Error>> {
     let mut cb = CliCallbacks;
     let _ = remove_mod(&paths, &input, &mut config, &mut lock, &mut cb)?;
 
-    ConduitLock::save_config(&paths, &config)?;
-    ConduitLock::save_lock(&paths, &lock)?;
+    ProjectFiles::save_manifest(&paths, &config)?;
+    ProjectFiles::save_lock(&paths, &lock)?;
 
     println!("{} Removed {}", style("✔").green(), style(&input).bold());
     Ok(())

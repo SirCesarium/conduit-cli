@@ -1,9 +1,9 @@
 use crate::core::error::{CoreError, CoreResult};
-use crate::core::filesystem::config::ConduitConfig;
-use crate::core::filesystem::lock::{ConduitLock, LockedMod};
 use crate::core::installer::extra_deps::{ExtraDepsPolicy, InstallerUi};
 use crate::core::installer::resolve::{InstallOptions, install_mod};
 use crate::core::installer::sync::sync_from_lock;
+use crate::core::io::project::lock::{LockedMod, ModSide};
+use crate::core::io::project::{ConduitConfig, ConduitLock, ProjectFiles};
 use crate::core::paths::CorePaths;
 use crate::modrinth::ModrinthAPI;
 use std::collections::HashSet;
@@ -64,8 +64,8 @@ pub async fn add_mods_to_project(
     }
 
     if !root_modrinth.is_empty() || !dep_modrinth.is_empty() {
-        let mut config = ConduitLock::load_config(paths)?;
-        let mut lock = ConduitLock::load_lock(paths)?;
+        let mut config = ProjectFiles::load_manifest(paths)?;
+        let mut lock = ProjectFiles::load_lock(paths)?;
 
         for slug in root_modrinth.iter().chain(dep_modrinth.iter()) {
             if let Err(e) = api.get_project(slug).await {
@@ -88,8 +88,8 @@ pub async fn add_mods_to_project(
             ).await?;
         }
 
-        ConduitLock::save_config(paths, &config)?;
-        ConduitLock::save_lock(paths, &lock)?;
+        ProjectFiles::save_manifest(paths, &config)?;
+        ProjectFiles::save_lock(paths, &lock)?;
     }
 
     Ok(())
@@ -101,8 +101,8 @@ pub async fn sync_project(
     ui: &mut dyn InstallerUi,
     options: InstallProjectOptions,
 ) -> CoreResult<SyncProjectReport> {
-    let mut config: ConduitConfig = ConduitLock::load_config(paths)?;
-    let mut lock = ConduitLock::load_lock(paths)?;
+    let mut config = ProjectFiles::load_manifest(paths)?;
+    let mut lock = ProjectFiles::load_lock(paths)?;
 
     if options.force {
         lock = rebuild_lock_from_config(api, paths, ui, &config, &lock, &options).await?;
@@ -154,8 +154,8 @@ pub async fn sync_project(
         report.pruned_files = prune_unmanaged_mods(paths, &config, &lock)?;
     }
 
-    ConduitLock::save_config(paths, &config)?;
-    ConduitLock::save_lock(paths, &lock)?;
+    ProjectFiles::save_manifest(paths, &config)?;
+    ProjectFiles::save_lock(paths, &lock)?;
 
     Ok(report)
 }
@@ -169,6 +169,7 @@ async fn rebuild_lock_from_config(
     options: &InstallProjectOptions,
 ) -> CoreResult<ConduitLock> {
     let mut new_lock = ConduitLock {
+        conduit_version: env!("CARGO_PKG_VERSION").to_string(),
         version: existing_lock.version,
         locked_mods: existing_lock
             .locked_mods
@@ -184,6 +185,7 @@ async fn rebuild_lock_from_config(
                         url: v.url.clone(),
                         hash: v.hash.clone(),
                         dependencies: v.dependencies.clone(),
+                        side: ModSide::Both // TODO: update crawler to use real mod side here
                     },
                 )
             })

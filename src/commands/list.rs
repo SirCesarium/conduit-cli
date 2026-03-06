@@ -1,4 +1,4 @@
-use conduit_cli::core::filesystem::lock::ConduitLock;
+use conduit_cli::core::io::project::{ConduitLock, ProjectFiles};
 use console::style;
 use conduit_cli::core::lister::build_list_report;
 use conduit_cli::core::paths::CorePaths;
@@ -6,8 +6,8 @@ use conduit_cli::modrinth::ModrinthAPI;
 
 pub async fn run(_api: &ModrinthAPI) -> Result<(), Box<dyn std::error::Error>> {
     let paths = CorePaths::from_project_dir(".")?;
-    let config = ConduitLock::load_config(&paths)?;
-    let lock = ConduitLock::load_lock(&paths)?;
+    let config = ProjectFiles::load_manifest(&paths)?;
+    let lock = ProjectFiles::load_lock(&paths)?;
     let report = build_list_report(&paths, &config, &lock)?;
 
     println!("\n{}", style("Project Dependencies:").bold().underlined());

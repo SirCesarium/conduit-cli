@@ -1,7 +1,6 @@
 use crate::core::error::{CoreError, CoreResult};
 use crate::core::events::CoreCallbacks;
-use crate::core::filesystem::config::InstanceType;
-use crate::core::filesystem::lock::ConduitLock;
+use crate::core::io::project::{InstanceType, ProjectFiles};
 use crate::core::paths::CorePaths;
 use crate::loaders::{Loader, LoaderInfo};
 
@@ -9,7 +8,7 @@ pub async fn install_loader(
     paths: &CorePaths,
     callbacks: &mut dyn CoreCallbacks,
 ) -> CoreResult<()> {
-    let config = ConduitLock::load_config(paths)?;
+    let config = ProjectFiles::load_manifest(paths)?;
 
     if let InstanceType::Client = config.instance_type {
         return Err(CoreError::ServerOnlyFeature);
@@ -45,11 +44,11 @@ pub async fn install_loader(
         .post_install(&installer_path, paths.project_dir(), callbacks)
         .await?;
 
-    let mut lock = ConduitLock::load_lock(paths)?;
+    let mut lock = ProjectFiles::load_lock(paths)?;
 
     lock.loader_version = Some(format!("{}@{}", loader_info.name, loader_version));
 
-    ConduitLock::save_lock(paths, &lock)?;
+    ProjectFiles::save_lock(paths, &lock)?;
 
     Ok(())
 }

@@ -1,6 +1,5 @@
 use crate::core::error::CoreResult;
-use crate::core::filesystem::config::{ConduitConfig, InstanceType};
-use crate::core::filesystem::lock::ConduitLock;
+use crate::core::io::project::{ConduitConfig, InstanceType, ProjectFiles};
 use crate::core::paths::CorePaths;
 
 pub struct InitParams {
@@ -26,6 +25,7 @@ pub fn init_project(paths: &CorePaths, params: InitParams) -> CoreResult<Conduit
         config.loader = l;
     }
 
-    ConduitLock::save_config(paths, &config)?;
+    ProjectFiles::save_manifest(paths, &config)?;
+
     Ok(config)
 }

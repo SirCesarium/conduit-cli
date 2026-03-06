@@ -16,6 +16,7 @@ pub enum CoreError {
     ServerOnlyFeature,
     ClientOnlyFeature,
     RuntimeError(String),
+    Zip(zip::result::ZipError),
 }
 
 impl fmt::Display for CoreError {
@@ -41,6 +42,7 @@ impl fmt::Display for CoreError {
             CoreError::ServerOnlyFeature => write!(f, "This feature is only available for server instances"),
             CoreError::ClientOnlyFeature => write!(f, "This feature is only available for client instances"),
             CoreError::RuntimeError(e) => write!(f, "Runtime error: {e}"),
+            CoreError::Zip(e) => write!(f, "Zip error: {e}"),
         }
     }
 }
@@ -82,5 +84,11 @@ pub type CoreResult<T> = Result<T, CoreError>;
 impl From<Box<dyn std::error::Error>> for CoreError {
     fn from(value: Box<dyn std::error::Error>) -> Self {
         Self::RuntimeError(value.to_string())
+    }
+}
+
+impl From<zip::result::ZipError> for CoreError {
+    fn from(value: zip::result::ZipError) -> Self {
+        Self::Zip(value)
     }
 }

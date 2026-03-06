@@ -1,11 +1,11 @@
-use crate::core::filesystem::config::ConduitConfig;
 use crate::core::error::{CoreError, CoreResult};
 use crate::core::events::CoreEvent;
 use crate::core::installer::download::download_to_path;
 use crate::core::installer::extra_deps::{
     ExtraDepCandidate, ExtraDepDecision, ExtraDepRequest, ExtraDepsPolicy, InstallerUi,
 };
-use crate::core::filesystem::lock::{ConduitLock, LockedMod};
+use crate::core::io::project::lock::{LockedMod, ModSide};
+use crate::core::io::project::{ConduitConfig, ConduitLock};
 use crate::core::paths::CorePaths;
 use crate::inspector::JarInspector;
 use crate::modrinth::ModrinthAPI;
@@ -155,6 +155,7 @@ async fn install_recursive(
             url: file.url.clone(),
             hash: sha1,
             dependencies: current_deps.clone(),
+            side: ModSide::Both // TODO: update crawler to use real mod side here
         },
     );
 

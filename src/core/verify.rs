@@ -1,5 +1,5 @@
 use crate::core::error::CoreResult;
-use crate::core::filesystem::lock::ConduitLock;
+use crate::core::io::project::ProjectFiles;
 use crate::core::paths::CorePaths;
 use sha1::{Digest as Sha1Digest, Sha1};
 use sha2::Sha256;
@@ -35,7 +35,7 @@ pub struct VerifyMissing {
 }
 
 pub fn verify_project(paths: &CorePaths, scope: VerifyScope) -> CoreResult<VerifyReport> {
-    let lock = ConduitLock::load_lock(paths)?;
+    let lock = ProjectFiles::load_lock(paths)?;
 
     let mut report = VerifyReport::default();
 

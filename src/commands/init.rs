@@ -1,5 +1,5 @@
-use conduit_cli::core::filesystem::config::InstanceType;
 use conduit_cli::core::initializer::{InitParams, init_project};
+use conduit_cli::core::io::project::InstanceType;
 use conduit_cli::core::paths::CorePaths;
 use console::style;
 
