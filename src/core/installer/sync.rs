@@ -1,7 +1,7 @@
 use crate::core::error::CoreResult;
 use crate::core::events::{CoreCallbacks, CoreEvent};
 use crate::core::installer::download::download_to_path;
-use crate::core::io::LockedMod;
+use crate::core::filesystem::lock::LockedMod;
 use crate::core::paths::CorePaths;
 use std::path::Path;
 

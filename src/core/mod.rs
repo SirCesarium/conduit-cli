@@ -1,6 +1,5 @@
 pub mod error;
 pub mod events;
-pub mod io;
 pub mod paths;
 pub mod installer;
 pub mod initializer;
@@ -10,3 +9,4 @@ pub mod local_mods;
 pub mod verify;
 pub mod loader_installer;
 pub mod start_server;
+pub mod filesystem;

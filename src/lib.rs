@@ -1,4 +1,3 @@
-pub mod config;
 pub mod core;
 pub mod inspector;
 pub mod modrinth;

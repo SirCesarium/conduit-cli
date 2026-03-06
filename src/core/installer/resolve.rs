@@ -1,11 +1,11 @@
-use crate::config::ConduitConfig;
+use crate::core::filesystem::config::ConduitConfig;
 use crate::core::error::{CoreError, CoreResult};
 use crate::core::events::CoreEvent;
 use crate::core::installer::download::download_to_path;
 use crate::core::installer::extra_deps::{
     ExtraDepCandidate, ExtraDepDecision, ExtraDepRequest, ExtraDepsPolicy, InstallerUi,
 };
-use crate::core::io::{ConduitLock, LockedMod};
+use crate::core::filesystem::lock::{ConduitLock, LockedMod};
 use crate::core::paths::CorePaths;
 use crate::inspector::JarInspector;
 use crate::modrinth::ModrinthAPI;

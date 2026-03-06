@@ -1,6 +1,6 @@
-use crate::config::ConduitConfig;
+use crate::core::filesystem::config::ConduitConfig;
 use crate::core::error::CoreResult;
-use crate::core::io::ConduitLock;
+use crate::core::filesystem::lock::ConduitLock;
 use crate::core::paths::CorePaths;
 use std::collections::HashSet;
 use std::fs;

@@ -1,4 +1,4 @@
-use conduit_cli::core::io::ConduitLock;
+use conduit_cli::core::filesystem::lock::ConduitLock;
 use console::style;
 use conduit_cli::core::lister::build_list_report;
 use conduit_cli::core::paths::CorePaths;

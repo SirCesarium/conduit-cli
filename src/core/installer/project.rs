@@ -1,9 +1,9 @@
-use crate::config::ConduitConfig;
+use crate::core::filesystem::config::ConduitConfig;
 use crate::core::error::CoreResult;
+use crate::core::filesystem::lock::{ConduitLock, LockedMod};
 use crate::core::installer::extra_deps::{ExtraDepsPolicy, InstallerUi};
 use crate::core::installer::resolve::{InstallOptions, install_mod};
 use crate::core::installer::sync::sync_from_lock;
-use crate::core::io::{ConduitLock, LockedMod};
 use crate::core::paths::CorePaths;
 use crate::modrinth::ModrinthAPI;
 use std::collections::HashSet;

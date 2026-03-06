@@ -1,5 +1,5 @@
 use crate::core::events::CoreCallbacks;
-use crate::core::io::ConduitLock;
+use crate::core::filesystem::lock::ConduitLock;
 use crate::core::paths::CorePaths;
 use crate::loaders::{Loader, LoaderInfo};
 use std::error::Error;

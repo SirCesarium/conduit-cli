@@ -1,5 +1,5 @@
 use conduit_cli::core::events::{CoreCallbacks, CoreEvent};
-use conduit_cli::core::io::ConduitLock;
+use conduit_cli::core::filesystem::lock::ConduitLock;
 use conduit_cli::core::paths::CorePaths;
 use conduit_cli::core::remover::remove_mod;
 use console::style;

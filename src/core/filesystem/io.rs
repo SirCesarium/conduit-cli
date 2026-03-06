@@ -1,28 +1,9 @@
-use serde::{Deserialize, Serialize};
-
-use crate::config::ConduitConfig;
 use crate::core::error::{CoreError, CoreResult};
+use crate::core::filesystem::config::ConduitConfig;
+use crate::core::filesystem::lock::ConduitLock;
 use crate::core::paths::CorePaths;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fs;
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ConduitLock {
-    pub version: i32,
-    pub locked_mods: HashMap<String, LockedMod>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub loader_version: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct LockedMod {
-    pub id: String,
-    pub version_id: String,
-    pub filename: String,
-    pub url: String,
-    pub hash: String,
-    pub dependencies: Vec<String>,
-}
 
 impl ConduitLock {
     pub fn load_config(paths: &CorePaths) -> CoreResult<ConduitConfig> {
@@ -71,5 +52,16 @@ impl ConduitLock {
 
         fs::write(paths.lock_path(), content)?;
         Ok(())
+    }
+}
+
+impl Default for ConduitConfig {
+    fn default() -> Self {
+        Self {
+            name: "conduit-server".to_string(),
+            mc_version: "1.21.1".to_string(),
+            loader: "neoforge@latest".to_string(),
+            mods: BTreeMap::new(),
+        }
     }
 }

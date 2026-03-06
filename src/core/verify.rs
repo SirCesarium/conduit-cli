@@ -1,5 +1,5 @@
 use crate::core::error::CoreResult;
-use crate::core::io::ConduitLock;
+use crate::core::filesystem::lock::ConduitLock;
 use crate::core::paths::CorePaths;
 use sha1::{Digest as Sha1Digest, Sha1};
 use sha2::Sha256;
