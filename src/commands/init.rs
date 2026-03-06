@@ -1,4 +1,4 @@
-use conduit_cli::core::initializer::{init_project, InitParams};
+use conduit_cli::core::initializer::{InitParams, init_project};
 use conduit_cli::core::paths::CorePaths;
 use console::style;
 
@@ -19,13 +19,20 @@ pub fn run(
 
         println!(
             "{} Created {} for project {}!",
-            style("⚡").yellow(),
+            style("⚡").magenta(),
             style("conduit.json").cyan(),
             style(&config.name).bold().green()
         );
         return Ok(());
     } else {
-        let default_name = "conduit-server".to_string();
+        let current_dir = std::env::current_dir()?;
+
+        let default_name = current_dir
+            .file_name()
+            .and_then(|os_str| os_str.to_str())
+            .map(|s| s.to_lowercase().replace(' ', "-"))
+            .unwrap_or_else(|| "conduit-server".to_string());
+
         params.name = Some(
             inquire::Text::new("Project name:")
                 .with_default(params.name.as_deref().unwrap_or(&default_name))
@@ -41,7 +48,7 @@ pub fn run(
 
         let default_loader = "neoforge@latest".to_string();
         params.loader = Some(
-            inquire::Text::new("Loader (e.g. neoforge@219):")
+            inquire::Text::new("Loader (e.g. neoforge@21.1.219):")
                 .with_default(params.loader.as_deref().unwrap_or(&default_loader))
                 .prompt()?,
         );

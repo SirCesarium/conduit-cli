@@ -34,7 +34,15 @@ pub async fn install_loader(
 
     let installer_path = loader.execute_installer(&loader_dir, callbacks).await?;
 
-    loader.post_install(&installer_path, paths.project_dir(), callbacks).await?;
+    loader
+        .post_install(&installer_path, paths.project_dir(), callbacks)
+        .await?;
+
+    let mut lock = ConduitLock::load_lock(paths)?;
+
+    lock.loader_version = Some(format!("{}@{}", loader_info.name, loader_version));
+
+    ConduitLock::save_lock(paths, &lock)?;
 
     Ok(())
 }
