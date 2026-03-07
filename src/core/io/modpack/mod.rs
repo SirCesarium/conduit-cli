@@ -3,7 +3,7 @@ pub mod metadata;
 pub mod mrpack;
 
 use std::path::Path;
-use crate::core::error::CoreResult;
+use crate::core::{error::CoreResult, paths::CorePaths};
 
 pub enum PackFormat {
     Conduit,
@@ -11,8 +11,8 @@ pub enum PackFormat {
 }
 
 pub trait ModpackProvider {
-    fn export(&self, output_path: &Path, include_config: bool) -> CoreResult<()>;
-    fn import(&self, input_path: &Path, target_dir: &Path) -> CoreResult<()>;
+    fn export(&self, paths: &CorePaths, output_path: &Path, include_config: bool) -> CoreResult<()>;
+    fn import(&self, paths: &CorePaths, input_path: &Path) -> CoreResult<()>;
 }
 
 pub fn get_provider(format: PackFormat) -> Box<dyn ModpackProvider> {
