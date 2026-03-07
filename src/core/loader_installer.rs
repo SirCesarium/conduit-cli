@@ -2,7 +2,7 @@ use crate::core::error::{CoreError, CoreResult};
 use crate::core::events::CoreCallbacks;
 use crate::core::io::project::{InstanceType, ProjectFiles};
 use crate::core::paths::CorePaths;
-use crate::loaders::{Loader, LoaderInfo};
+use crate::loaders::{LoaderType, LoaderInfo};
 
 pub async fn install_loader(
     paths: &CorePaths,
@@ -17,7 +17,7 @@ pub async fn install_loader(
     let loader_info = LoaderInfo::parse(&config.loader);
 
     let loader = match loader_info.name.as_str() {
-        "neoforge" => Loader::NeoForge,
+        "neoforge" => LoaderType::NeoForge,
         _ => return Err(CoreError::UnsupportedLoader(loader_info.name)),
     };
 

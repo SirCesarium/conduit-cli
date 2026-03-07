@@ -123,7 +123,13 @@ pub async fn post_install_neoforge(
     let eula_path = install_path.join("eula.txt");
     std::fs::write(eula_path, "eula=true")?;
 
-    let log_names = ["neoforge-installer.jar.log", "installer.log"];
+    let log_names = [
+        "neoforge-installer.jar.log",
+        "installer.log",
+        "run.sh",
+        "run.bat",
+        "user_jvm_args.txt",
+    ];
 
     for log_name in log_names {
         let log_path = install_path.join(log_name);

@@ -20,18 +20,18 @@ impl LoaderInfo {
     }
 }
 
-pub enum Loader {
+pub enum LoaderType {
     NeoForge,
 }
 
-impl Loader {
+impl LoaderType {
     pub async fn get_latest_version(
         &self,
         mc_version: &str,
         callbacks: &mut dyn CoreCallbacks,
     ) -> Result<String, Box<dyn std::error::Error>> {
         match self {
-            Loader::NeoForge => neoforge::get_latest_neoforge_version(mc_version, callbacks).await,
+            LoaderType::NeoForge => neoforge::get_latest_neoforge_version(mc_version, callbacks).await,
         }
     }
 
@@ -43,7 +43,7 @@ impl Loader {
         callbacks: &mut dyn CoreCallbacks,
     ) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
         match self {
-            Loader::NeoForge => {
+            LoaderType::NeoForge => {
                 neoforge::download_neoforge_installer(
                     mc_version,
                     loader_version,
@@ -61,7 +61,7 @@ impl Loader {
         callbacks: &mut dyn CoreCallbacks,
     ) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
         match self {
-            Loader::NeoForge => {
+            LoaderType::NeoForge => {
                 neoforge::execute_neoforge_installer(installer_path, callbacks).await
             }
         }
@@ -74,7 +74,7 @@ impl Loader {
         callbacks: &mut dyn CoreCallbacks,
     ) -> Result<(), Box<dyn std::error::Error>> {
         match self {
-            Loader::NeoForge => {
+            LoaderType::NeoForge => {
                 neoforge::post_install_neoforge(installer_path, install_path, callbacks).await
             }
         }

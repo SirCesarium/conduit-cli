@@ -11,14 +11,14 @@ pub struct ProjectFiles;
 
 impl ProjectFiles {
     pub fn load_manifest(paths: &CorePaths) -> CoreResult<ConduitConfig> {
-        let content = fs::read_to_string(paths.config_path())
+        let content = fs::read_to_string(paths.manifest_path())
             .map_err(|_| CoreError::MissingConfig)?;
         ConduitConfig::from_json(&content)
     }
 
     pub fn save_manifest(paths: &CorePaths, config: &ConduitConfig) -> CoreResult<()> {
         let json = config.to_json()?;
-        fs::write(paths.config_path(), json)
+        fs::write(paths.manifest_path(), json)
             .map_err(|e| CoreError::RuntimeError(format!("Failed to write conduit.json: {}", e)))
     }
 

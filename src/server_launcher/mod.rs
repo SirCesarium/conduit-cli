@@ -1,7 +1,11 @@
-use std::path::PathBuf;
+use std::path::Path;
 
 use crate::{
-    core::events::{CoreCallbacks, CoreEvent},
+    core::{
+        events::{CoreCallbacks, CoreEvent},
+        io::server::config::ServerConfig,
+        paths::CorePaths,
+    },
     server_launcher::generic_launcher::{LaunchCommand, launch_generic_server},
 };
 
@@ -15,39 +19,69 @@ pub enum ServerLauncher {
 }
 
 impl ServerLauncher {
+    pub fn is_ready(&self, paths: &CorePaths, version: &str) -> bool {
+        match self {
+            Self::Neoforge => {
+                let dir = paths.neoforge_version_dir(version);
+                dir.join("unix_args.txt").exists() && dir.join("win_args.txt").exists()
+            }
+            Self::Vanilla => paths.project_dir().join("server.jar").exists(),
+        }
+    }
+
     pub async fn launch(
         &self,
-        path: PathBuf,
+        paths: &CorePaths,
+        config: &ServerConfig,
+        loader_version: &str,
         show_logs: bool,
         show_gui: bool,
         callbacks: &mut dyn CoreCallbacks,
     ) {
         let launch_cmd = match self {
             Self::Neoforge => {
-                let (shell, mut args) = if cfg!(target_os = "windows") {
-                    ("cmd", vec!["/C", "run.bat"])
+                let mut args = Vec::new();
+
+                args.push(format!("-Xmx{}", config.performance.max_ram));
+                args.push(format!("-Xms{}", config.performance.min_ram));
+
+                for jvm_arg in &config.performance.jvm_args {
+                    args.push(jvm_arg.clone());
+                }
+
+                let arg_file = if cfg!(target_os = "windows") {
+                    "win_args.txt"
                 } else {
-                    ("sh", vec!["run.sh"])
+                    "unix_args.txt"
                 };
+
+                let relative_args_path = Path::new("libraries")
+                    .join("net/neoforged/neoforge")
+                    .join(loader_version)
+                    .join(arg_file);
+
+                args.push(format!("@{}", relative_args_path.display()));
+
                 if !show_gui {
-                    args.push("nogui");
+                    args.push("nogui".to_string());
                 }
 
                 LaunchCommand {
-                    program: shell.to_string(),
-                    args: args.iter().map(|s| s.to_string()).collect(),
-                    current_dir: path,
+                    program: "java".to_string(),
+                    args,
+                    current_dir: paths.project_dir().to_path_buf(),
                 }
             }
             Self::Vanilla => LaunchCommand {
                 program: "java".to_string(),
                 args: vec![
-                    "-Xmx2G".into(),
+                    format!("-Xmx{}", config.performance.max_ram),
+                    format!("-Xms{}", config.performance.min_ram),
                     "-jar".into(),
                     "server.jar".into(),
                     "nogui".into(),
                 ],
-                current_dir: path,
+                current_dir: paths.project_dir().to_path_buf(),
             },
         };
 
