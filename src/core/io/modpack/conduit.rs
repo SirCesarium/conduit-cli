@@ -5,23 +5,49 @@ use walkdir::WalkDir;
 use zip::write::SimpleFileOptions;
 
 use crate::core::error::{CoreError, CoreResult};
-use crate::core::io::modpack::ModpackProvider;
+use crate::core::events::{CoreCallbacks, CoreEvent};
 use crate::core::io::modpack::metadata::{
     ConduitInfo, ConduitPackMetadata, ContentFlags, PackInfo,
 };
+use crate::core::io::modpack::{ModpackProvider, PackAnalysis};
 use crate::core::io::project::ProjectFiles;
 use crate::core::paths::CorePaths;
 
 pub struct ConduitProvider;
 
+impl ConduitProvider {
+    fn is_dangerous(extension: &str) -> bool {
+        let blacklist = [
+            "exe", "bat", "sh", "py", "js", "vbs", "msi", "com", "cmd", "scr",
+        ];
+        blacklist.contains(&extension.to_lowercase().as_str())
+    }
+}
+
 impl ModpackProvider for ConduitProvider {
-    fn export(&self, paths: &CorePaths, output_path: &Path, include_config: bool) -> CoreResult<()> {
+    fn export(
+        &self,
+        paths: &CorePaths,
+        output_path: &Path,
+        include_config: bool,
+    ) -> CoreResult<()> {
         let manifest = ProjectFiles::load_manifest(paths)?;
-        
+        let mut local_mod_filenames = std::collections::HashSet::new();
+
+        if paths.lock_path().exists() {
+            let lock = ProjectFiles::load_lock(paths)?;
+            for (slug, locked_mod) in lock.locked_mods {
+                if slug.starts_with("local:") || slug.starts_with("f:") || slug.starts_with("file:")
+                {
+                    local_mod_filenames.insert(locked_mod.filename);
+                }
+            }
+        }
+
         let file = File::create(output_path)?;
         let mut zip = zip::ZipWriter::new(file);
-        let options = SimpleFileOptions::default()
-            .compression_method(zip::CompressionMethod::Deflated);
+        let options =
+            SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
         zip.start_file("conduit.json", options)?;
         zip.write_all(manifest.to_json()?.as_bytes())?;
@@ -47,7 +73,7 @@ impl ModpackProvider for ConduitProvider {
             },
             content: ContentFlags {
                 has_configs: include_config && paths.project_dir().join("config").exists(),
-                has_mods_overrides: paths.mods_dir().exists(),
+                has_mods_overrides: !local_mod_filenames.is_empty(),
             },
         };
 
@@ -55,44 +81,111 @@ impl ModpackProvider for ConduitProvider {
         zip.write_all(meta.to_toml()?.as_bytes())?;
 
         let mut folders = Vec::new();
-        if include_config { folders.push("config"); }
-        if paths.mods_dir().exists() { folders.push("mods"); }
+        if include_config {
+            folders.push("config");
+        }
+        if paths.mods_dir().exists() {
+            folders.push("mods");
+        }
 
         for folder_name in folders {
             let folder_path = paths.project_dir().join(folder_name);
-            for entry in WalkDir::new(&folder_path).into_iter().filter_map(|e| e.ok()) {
+            let is_mods_folder = folder_name == "mods";
+
+            for entry in WalkDir::new(&folder_path)
+                .into_iter()
+                .filter_map(|e| e.ok())
+            {
                 if entry.path().is_file() {
-                    let relative_path = entry.path().strip_prefix(paths.project_dir())
+                    let filename = entry.file_name().to_string_lossy().to_string();
+
+                    if is_mods_folder && !local_mod_filenames.contains(&filename) {
+                        continue;
+                    }
+
+                    let relative_path = entry
+                        .path()
+                        .strip_prefix(paths.project_dir())
                         .map_err(|_| CoreError::RuntimeError("Path error".into()))?;
-                    
-                    let zip_path = format!("overrides/{}", relative_path.to_string_lossy().replace('\\', "/"));
+
+                    let zip_path = format!(
+                        "overrides/{}",
+                        relative_path.to_string_lossy().replace('\\', "/")
+                    );
+
                     zip.start_file(zip_path, options)?;
                     zip.write_all(&fs::read(entry.path())?)?;
                 }
             }
         }
 
-        zip.finish().map_err(|e| CoreError::RuntimeError(e.to_string()))?;
+        zip.finish()
+            .map_err(|e| CoreError::RuntimeError(e.to_string()))?;
         Ok(())
     }
 
-    fn import(&self, paths: &CorePaths, input_path: &Path) -> CoreResult<()> {
+    fn analyze(&self, input_path: &Path) -> CoreResult<PackAnalysis> {
         let file = File::open(input_path)?;
-        let mut archive = zip::ZipArchive::new(file)
-            .map_err(|e| CoreError::RuntimeError(e.to_string()))?;
+        let mut archive =
+            zip::ZipArchive::new(file).map_err(|e| CoreError::RuntimeError(e.to_string()))?;
+
+        let mut files = Vec::new();
+        let mut extensions = std::collections::HashSet::new();
+        let mut suspicious = Vec::new();
+        let mut dangerous_count = 0;
+        let mut local_jars_count = 0;
 
         for i in 0..archive.len() {
-            let file = archive.by_index(i).map_err(|e| CoreError::RuntimeError(e.to_string()))?;
-            if file.name().contains("overrides/") && file.name().ends_with(".jar") {
-                println!("⚠️  WARNING: Modpack contains local .jar: {}", file.name());
+            let file = archive
+                .by_index(i)
+                .map_err(|e| CoreError::RuntimeError(e.to_string()))?;
+            let name = file.name().to_string();
+
+            if file.is_file() {
+                files.push(name.clone());
+
+                if let Some(ext) = Path::new(&name).extension().and_then(|e| e.to_str()) {
+                    let ext_lower = ext.to_lowercase();
+                    extensions.insert(ext_lower.clone());
+
+                    if Self::is_dangerous(&ext_lower) {
+                        dangerous_count += 1;
+                        suspicious.push(format!("[DANGER] {}", name));
+                    }
+                }
+
+                if name.contains("overrides/") && name.ends_with(".jar") {
+                    local_jars_count += 1;
+                    suspicious.push(format!("[LOCAL JAR] {}", name));
+                }
             }
         }
 
+        Ok(PackAnalysis {
+            files,
+            extensions: extensions.into_iter().collect(),
+            dangerous_count,
+            local_jars_count,
+            suspicious_files: suspicious,
+        })
+    }
+
+    fn import(
+        &self,
+        paths: &CorePaths,
+        input_path: &Path,
+        callbacks: &mut dyn CoreCallbacks,
+    ) -> CoreResult<()> {
+        let file = File::open(input_path)?;
+        let mut archive = zip::ZipArchive::new(file)?;
+
         let target_dir = paths.project_dir();
-        if !target_dir.exists() { fs::create_dir_all(target_dir)?; }
+        if !target_dir.exists() {
+            fs::create_dir_all(target_dir)?;
+        }
 
         for i in 0..archive.len() {
-            let mut file = archive.by_index(i).map_err(|e| CoreError::RuntimeError(e.to_string()))?;
+            let mut file = archive.by_index(i)?;
             let raw_name = file.name().to_string();
 
             let outpath = if let Some(stripped) = raw_name.strip_prefix("overrides/") {
@@ -104,12 +197,21 @@ impl ModpackProvider for ConduitProvider {
             if file.is_dir() {
                 fs::create_dir_all(&outpath)?;
             } else {
-                if let Some(p) = outpath.parent() { fs::create_dir_all(p)?; }
+                if let Some(p) = outpath.parent() {
+                    fs::create_dir_all(p)?;
+                }
                 let mut outfile = File::create(&outpath)?;
                 std::io::copy(&mut file, &mut outfile)?;
+
+                if raw_name.ends_with(".json") || raw_name.ends_with(".lock") {
+                    callbacks.on_event(CoreEvent::LinkedFile { filename: raw_name });
+                }
             }
         }
 
+        callbacks.on_event(CoreEvent::Success(
+            "Modpack imported successfully".to_string(),
+        ));
         Ok(())
     }
 }

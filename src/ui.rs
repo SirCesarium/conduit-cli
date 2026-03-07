@@ -111,6 +111,7 @@ impl CoreCallbacks for CliUi {
                     println!("{} {}", style("!").cyan(), msg);
                 }
             }
+            CoreEvent::SecurityWarning(message) => println!("\n{} {}\n", style(" !!! SECURITY ALERT ").on_red().white().bold(), style(message).red()),
             CoreEvent::TaskStarted(msg) => {
                 if let Some(pb) = self.spinner_pb.take() {
                     pb.finish_and_clear();

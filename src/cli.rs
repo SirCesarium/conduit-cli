@@ -129,4 +129,26 @@ pub enum Commands {
         #[arg(short = 'g', long, help = "Enables default Server JAR integrated GUI")]
         show_gui: bool,
     },
+
+    /// 📥 Import a modpack from a .conduit file
+    Import {
+        #[arg(help = "Path to the modpack .conduit file")]
+        input: String,
+
+        #[arg(short = 'y', long, help = "Skip security confirmation prompts")]
+        yes: bool,
+    },
+
+    /// 📦 Export your project as a shareable modpack
+    Export {
+        #[arg(help = "Output path for the .conduit file (e.g. my-pack.conduit)")]
+        output: String,
+
+        #[arg(
+            short = 'c',
+            long = "include-config",
+            help = "Include the /config folder in the export"
+        )]
+        include_config: bool,
+    },
 }

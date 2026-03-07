@@ -74,5 +74,19 @@ async fn main() {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
+
+        Commands::Import { input, yes } => {
+            if let Err(e) = commands::import::run(input, yes) {
+                eprintln!("{} {}", style("Error:").red().bold(), e);
+            }
+        }
+        Commands::Export {
+            output,
+            include_config,
+        } => {
+            if let Err(e) = commands::export::run(output, include_config) {
+                eprintln!("{} {}", style("Error:").red().bold(), e);
+            }
+        }
     }
 }

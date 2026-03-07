@@ -13,6 +13,7 @@ pub enum CoreEvent {
     Success(String),
     Warning(String),
     Error(String),
+    SecurityWarning(String),
     Installed { slug: String, title: String },
     AddedAsDependency { slug: String },
     AlreadyInstalled { slug: String },
