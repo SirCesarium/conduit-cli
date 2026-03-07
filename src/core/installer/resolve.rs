@@ -7,7 +7,7 @@ use crate::core::installer::extra_deps::{
 use crate::core::io::project::lock::{LockedMod, ModSide};
 use crate::core::io::project::{ConduitConfig, ConduitLock};
 use crate::core::paths::CorePaths;
-use crate::inspector::JarInspector;
+use crate::java_inspector::JarInspector;
 use crate::modrinth::ModrinthAPI;
 use async_recursion::async_recursion;
 use std::fs;

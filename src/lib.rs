@@ -1,5 +1,5 @@
 pub mod core;
-pub mod inspector;
+pub mod java_inspector;
 pub mod modrinth;
 pub mod loaders;
 pub mod server_launcher;
