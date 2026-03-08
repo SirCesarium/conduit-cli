@@ -1,9 +1,10 @@
-use crate::ui::CliUi;
 use conduit_cli::core::installer::extra_deps::ExtraDepsPolicy;
 use conduit_cli::core::installer::project::{InstallProjectOptions, add_mods_to_project};
 use conduit_cli::core::paths::CorePaths;
 use conduit_cli::modrinth::ModrinthAPI;
 use console::style;
+
+use crate::cli::ui::CliUi;
 
 pub async fn run(
     api: &ModrinthAPI,

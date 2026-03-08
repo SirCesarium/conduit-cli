@@ -1,4 +1,3 @@
-use crate::progress::ConduitProgress;
 use conduit_cli::core::events::{CoreCallbacks, CoreEvent, DownloadProgress, LogLevel};
 use conduit_cli::core::installer::extra_deps::{
     ExtraDepChooser, ExtraDepDecision, ExtraDepRequest,
@@ -7,6 +6,8 @@ use console::{Term, style};
 use indicatif::ProgressBar;
 use inquire::Select;
 use std::io::Write;
+
+use crate::cli::progress::ConduitProgress;
 
 pub struct CliUi {
     term: Term,

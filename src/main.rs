@@ -2,11 +2,10 @@ use clap::Parser;
 use console::style;
 
 mod cli;
-mod commands;
-mod progress;
-mod ui;
 use cli::{Cli, Commands, VerifyTarget};
 use conduit_cli::modrinth::ModrinthAPI;
+
+use crate::cli::commands;
 
 #[tokio::main]
 async fn main() {

@@ -6,6 +6,10 @@ use clap::{
     },
 };
 
+pub mod commands;
+pub mod ui;
+pub mod progress;
+
 fn get_styles() -> Styles {
     Styles::styled()
         .header(AnsiColor::Yellow.on_default() | Effects::BOLD)

@@ -1,4 +1,4 @@
-use crate::ui::CliUi;
+use crate::cli::ui::CliUi;
 use conduit_cli::core::installer::extra_deps::ExtraDepsPolicy;
 use conduit_cli::core::installer::project::{InstallProjectOptions, sync_project};
 use conduit_cli::core::local_mods::find_missing_local_mods;

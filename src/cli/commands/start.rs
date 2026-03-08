@@ -1,4 +1,4 @@
-use crate::ui::CliUi;
+use crate::cli::ui::CliUi;
 use conduit_cli::{
     core::{
         io::{project::ProjectFiles, server::config::ServerConfig},

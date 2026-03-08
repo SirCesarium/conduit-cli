@@ -1,10 +1,11 @@
-use crate::ui::CliUi;
 use conduit_cli::core::events::{CoreCallbacks, CoreEvent};
 use conduit_cli::core::io::modpack::{PackFormat, get_provider};
 use conduit_cli::core::paths::CorePaths;
 use console::style;
 use inquire::Confirm;
 use std::path::PathBuf;
+
+use crate::cli::ui::CliUi;
 
 pub fn run(input: String, yes: bool) -> Result<(), Box<dyn std::error::Error>> {
     let paths = CorePaths::from_project_dir(".")?;
