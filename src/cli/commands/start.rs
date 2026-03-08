@@ -3,7 +3,7 @@ use conduit_cli::core::{
     io::{project::ProjectFiles, server::config::ServerConfig},
     paths::CorePaths,
     runtime::{launchers::ServerLauncher, loaders::LoaderInfo},
-    start_server::start_server,
+    server::run::start_server,
 };
 use console::style;
 use std::error::Error;
