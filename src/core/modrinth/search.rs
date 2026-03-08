@@ -31,4 +31,17 @@ impl ModrinthAPI {
             .json::<SearchResult>()
             .await
     }
+
+    pub async fn get_suggestions(&self, input: &str) -> Vec<(String, String)> {
+        let query = input.split('@').next().unwrap_or(input);
+
+        match self.search(query, 5, 0, "relevance", None).await {
+            Ok(results) => results
+                .hits
+                .into_iter()
+                .map(|hit| (hit.title, hit.slug))
+                .collect(),
+            Err(_) => Vec::new(),
+        }
+    }
 }

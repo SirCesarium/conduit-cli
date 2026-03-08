@@ -1,7 +1,7 @@
 use conduit_cli::core::installer::extra_deps::ExtraDepsPolicy;
 use conduit_cli::core::installer::project::{InstallProjectOptions, add_mods_to_project};
-use conduit_cli::core::paths::CorePaths;
 use conduit_cli::core::modrinth::ModrinthAPI;
+use conduit_cli::core::paths::CorePaths;
 use console::style;
 
 use crate::cli::ui::CliUi;
@@ -38,33 +38,18 @@ pub async fn run(
         }
         Err(e) => match e {
             conduit_cli::core::error::CoreError::ProjectNotFound { slug } => {
-                print_add_not_found_suggestions(api, &slug).await;
+                let suggestions = api.get_suggestions(&slug).await;
+
+                println!(
+                    "{} Project not found: {}",
+                    style("✘").red(),
+                    style(&slug).yellow().bold()
+                );
+                ui.print_suggestions(&suggestions);
+
                 Ok(())
             }
             _ => Err(Box::new(e)),
         },
-    }
-}
-
-async fn print_add_not_found_suggestions(api: &ModrinthAPI, input: &str) {
-    let query = input.split('@').next().unwrap_or(input);
-    println!(
-        "{} Project not found: {}",
-        style("✘").red(),
-        style(query).yellow().bold()
-    );
-
-    if let Ok(results) = api.search(query, 5, 0, "relevance", None).await
-        && !results.hits.is_empty()
-    {
-        println!("{} Did you mean one of these?", style("?").yellow());
-        for hit in results.hits {
-            println!(
-                "  {} {} ({})",
-                style("-").dim(),
-                style(hit.title).cyan(),
-                style(hit.slug).dim()
-            );
-        }
     }
 }

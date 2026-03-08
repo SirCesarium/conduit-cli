@@ -50,6 +50,26 @@ impl CliUi {
         self.download_filename = Some(filename.to_string());
         self.download_total = total_bytes;
     }
+
+    pub fn print_suggestions(&self, suggestions: &[(String, String)]) {
+        if suggestions.is_empty() {
+            return;
+        }
+
+        let _ = self.term.write_line(&format!(
+            "{} Did you mean one of these?",
+            style("?").yellow()
+        ));
+
+        for (title, slug) in suggestions {
+            let _ = self.term.write_line(&format!(
+                "  {} {} ({})",
+                style("-").dim(),
+                style(title).cyan(),
+                style(slug).dim()
+            ));
+        }
+    }
 }
 
 impl CoreCallbacks for CliUi {
@@ -112,7 +132,11 @@ impl CoreCallbacks for CliUi {
                     println!("{} {}", style("!").cyan(), msg);
                 }
             }
-            CoreEvent::SecurityWarning(message) => println!("\n{} {}\n", style(" !!! SECURITY ALERT ").on_red().white().bold(), style(message).red()),
+            CoreEvent::SecurityWarning(message) => println!(
+                "\n{} {}\n",
+                style(" !!! SECURITY ALERT ").on_red().white().bold(),
+                style(message).red()
+            ),
             CoreEvent::TaskStarted(msg) => {
                 if let Some(pb) = self.spinner_pb.take() {
                     pb.finish_and_clear();
@@ -246,7 +270,9 @@ impl ExtraDepChooser for CliUi {
                 .candidates
                 .iter()
                 .find(|c| choice.contains(&c.slug))
-                .map_or(ExtraDepDecision::Skip, |c| ExtraDepDecision::InstallSlug(c.slug.clone())),
+                .map_or(ExtraDepDecision::Skip, |c| {
+                    ExtraDepDecision::InstallSlug(c.slug.clone())
+                }),
             _ => ExtraDepDecision::Skip,
         }
     }
