@@ -4,9 +4,9 @@ use crate::core::installer::resolve::{InstallOptions, install_mod};
 use crate::core::installer::sync::sync_from_lock;
 use crate::core::io::project::lock::{LockedMod, ModSide};
 use crate::core::io::project::{ConduitConfig, ConduitLock, ProjectFiles};
+use crate::core::modrinth::ModrinthAPI;
 use crate::core::mods::local::add_local_mods_to_project;
 use crate::core::paths::CorePaths;
-use crate::core::modrinth::ModrinthAPI;
 use std::collections::HashSet;
 use std::fs;
 use std::path::PathBuf;
@@ -45,7 +45,10 @@ pub async fn add_mods_to_project(
     let mut dep_modrinth = Vec::new();
 
     for input in inputs {
-        if let Some(path_str) = input.strip_prefix("f:").or_else(|| input.strip_prefix("file:")) {
+        if let Some(path_str) = input
+            .strip_prefix("f:")
+            .or_else(|| input.strip_prefix("file:"))
+        {
             local_paths.push(PathBuf::from(path_str));
         } else {
             root_modrinth.push(input);
@@ -70,23 +73,46 @@ pub async fn add_mods_to_project(
 
         for slug in root_modrinth.iter().chain(dep_modrinth.iter()) {
             if let Err(e) = api.get_project(slug).await {
-                if e.status() == Some(reqwest::StatusCode::NOT_FOUND) {
+                if let Some(req_err) = e.downcast_ref::<reqwest::Error>()
+                    && req_err.status() == Some(reqwest::StatusCode::NOT_FOUND)
+                {
                     return Err(CoreError::ProjectNotFound { slug: slug.clone() });
                 }
+
                 return Err(e.into());
             }
         }
 
         for slug in root_modrinth {
-            install_mod(api, paths, &slug, &mut config, &mut lock, ui, 
-                InstallOptions { is_root: true, extra_deps_policy: options.extra_deps_policy.clone() }
-            ).await?;
+            install_mod(
+                api,
+                paths,
+                &slug,
+                &mut config,
+                &mut lock,
+                ui,
+                InstallOptions {
+                    is_root: true,
+                    extra_deps_policy: options.extra_deps_policy.clone(),
+                },
+            )
+            .await?;
         }
 
         for slug in dep_modrinth {
-            install_mod(api, paths, &slug, &mut config, &mut lock, ui, 
-                InstallOptions { is_root: false, extra_deps_policy: options.extra_deps_policy.clone() }
-            ).await?;
+            install_mod(
+                api,
+                paths,
+                &slug,
+                &mut config,
+                &mut lock,
+                ui,
+                InstallOptions {
+                    is_root: false,
+                    extra_deps_policy: options.extra_deps_policy.clone(),
+                },
+            )
+            .await?;
         }
 
         ProjectFiles::save_manifest(paths, &config)?;
@@ -109,38 +135,33 @@ pub async fn sync_project(
         lock = rebuild_lock_from_config(api, paths, ui, &config, &lock, &options).await?;
     }
 
-    let mods_to_check: Vec<String> = config
+    let mods_to_install: Vec<(String, String)> = config
         .mods
         .iter()
-        .filter(|(_k, v)| v != &"local")
-        .map(|(k, _v)| k.clone())
+        .filter(|(slug, version)| version != &"local" && !lock.locked_mods.contains_key(*slug))
+        .map(|(k, v)| (k.clone(), v.clone()))
         .collect();
-    for slug in mods_to_check {
-        if !lock.locked_mods.contains_key(&slug) {
-            let input = if let Some(version) = config.mods.get(&slug) {
-                if version == "latest" {
-                    slug.clone()
-                } else {
-                    format!("{slug}@{version}")
-                }
-            } else {
-                slug.clone()
-            };
 
-            install_mod(
-                api,
-                paths,
-                &input,
-                &mut config,
-                &mut lock,
-                ui,
-                InstallOptions {
-                    is_root: true,
-                    extra_deps_policy: options.extra_deps_policy.clone(),
-                },
-            )
-            .await?;
-        }
+    for (slug, version) in mods_to_install {
+        let input = if version == "latest" {
+            slug.clone()
+        } else {
+            format!("{slug}@{version}")
+        };
+
+        install_mod(
+            api,
+            paths,
+            &input,
+            &mut config,
+            &mut lock,
+            ui,
+            InstallOptions {
+                is_root: true,
+                extra_deps_policy: options.extra_deps_policy.clone(),
+            },
+        )
+        .await?;
     }
 
     sync_from_lock(
@@ -186,7 +207,7 @@ async fn rebuild_lock_from_config(
                         url: v.url.clone(),
                         hash: v.hash.clone(),
                         dependencies: v.dependencies.clone(),
-                        side: ModSide::Both // TODO: update crawler to use real mod side here
+                        side: ModSide::Both, // TODO: update crawler to use real mod side here
                     },
                 )
             })

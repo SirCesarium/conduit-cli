@@ -1,4 +1,6 @@
+use crate::cli::commands;
 use crate::cli::ui::CliUi;
+use conduit_cli::core::modrinth::ModrinthAPI;
 use conduit_cli::core::{
     io::{project::ProjectFiles, server::config::ServerConfig},
     paths::CorePaths,
@@ -10,36 +12,47 @@ use std::error::Error;
 
 pub async fn run(show_logs: bool, show_gui: bool) -> Result<(), Box<dyn Error>> {
     let paths = CorePaths::from_project_dir(".")?;
+    let api = ModrinthAPI::new();
     let mut ui = CliUi::new();
 
     let config = match ServerConfig::load_or_create(paths.config_path()) {
         Ok(cfg) => cfg,
         Err(e) => {
-            println!("{} {}", style("✘").red(), e);
+            eprintln!("{} {}", style("✘").red(), e);
             return Err(e.into());
         }
     };
 
-    let Ok(lock) = ProjectFiles::load_lock(&paths) else {
+    if !paths.lock_path().exists() {
         println!(
-            "{} No {} found. Please run {} first.",
-            style("!").yellow(),
-            style("conduit.lock").bold(),
-            style("conduit install").cyan()
+            "{} No lockfile found. Synchronizing project...",
+            style("!").blue()
         );
-        return Ok(());
-    };
+        commands::install::run(&api, false, false, true).await?;
+    }
+
+    let mut lock = ProjectFiles::load_lock(&paths)?;
+
+    if lock.loader_version.is_none() {
+        println!(
+            "{} Loader not configured. Installing loader...",
+            style("!").blue()
+        );
+        commands::install_loader::run().await?;
+        lock = ProjectFiles::load_lock(&paths)?;
+    }
 
     let loader_raw = lock
         .loader_version
-        .ok_or("No loader version found in lock file")?; // FIXME: probably the loader isn't installed
+        .ok_or("Critical: Loader version missing after sync")?;
+    
     let loader_info = LoaderInfo::parse(&loader_raw);
     let loader_version = loader_info.version;
 
-    let launcher = if loader_info.name.to_lowercase().as_str() == "neoforge" {
+    let launcher = if loader_info.name.to_lowercase() == "neoforge" {
         ServerLauncher::Neoforge
     } else {
-        println!(
+        eprintln!(
             "{} Unsupported loader: {}",
             style("✘").red(),
             loader_info.name
@@ -49,15 +62,10 @@ pub async fn run(show_logs: bool, show_gui: bool) -> Result<(), Box<dyn Error>> 
 
     if !launcher.is_ready(&paths, &loader_version) {
         println!(
-            "{} Loader {} version {} is not installed.",
-            style("!").yellow(),
-            style(&loader_info.name).bold(),
-            style(&loader_version).cyan()
+            "{} Loader binary missing. Installing...",
+            style("!").blue()
         );
-
-        // TODO: auto call install loader
-        println!("  Run {} to fix this.", style("conduit install").cyan());
-        return Ok(());
+        commands::install_loader::run().await?;
     }
 
     let properties_path = paths.project_dir().join("server.properties");

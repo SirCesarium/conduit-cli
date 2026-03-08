@@ -11,15 +11,28 @@ impl ModrinthAPI {
         index: &str,
         facets: Option<String>,
     ) -> Result<SearchResult, reqwest::Error> {
-        let mut params = vec![
+        let mod_filter = "\"project_type:mod\"";
+
+        let final_facets = match facets {
+            Some(f) => {
+                if f.starts_with('[') && f.ends_with(']') {
+                    let inner = &f[1..f.len() - 1];
+                    format!("[{inner},[{mod_filter}]]")
+                } else {
+                    format!("[[{mod_filter}]]")
+                }
+            }
+            None => format!("[[{mod_filter}]]"),
+        };
+
+        let params = vec![
             ("query", query.to_string()),
             ("limit", limit.to_string()),
             ("offset", offset.to_string()),
             ("index", index.to_string()),
+            ("facets", final_facets),
         ];
-        if let Some(f) = facets {
-            params.push(("facets", f));
-        }
+
         let url = Url::parse_with_params(&format!("{}/search", self.base_url), &params)
             .expect("Critical: Failed to build Modrinth search URL");
 

@@ -72,20 +72,10 @@ async fn install_recursive(
     let project = api.get_project(slug_or_id).await?;
     let current_slug = project.slug;
 
-    if is_root && config.mods.contains_key(&current_slug) {
-        ui.on_event(CoreEvent::AlreadyInstalled { slug: current_slug });
-        return Ok(());
-    }
-
-    if !is_root && lock.locked_mods.contains_key(&current_slug) {
-        return Ok(());
-    }
-
-    if is_root && lock.locked_mods.contains_key(&current_slug) {
-        config
-            .mods
-            .insert(current_slug.clone(), "latest".to_string());
-        ui.on_event(CoreEvent::AddedAsDependency { slug: current_slug });
+    if lock.locked_mods.contains_key(&current_slug) {
+        if is_root {
+            ui.on_event(CoreEvent::AlreadyInstalled { slug: current_slug });
+        }
         return Ok(());
     }
 
