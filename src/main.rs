@@ -3,7 +3,7 @@ use console::style;
 
 mod cli;
 use cli::{Cli, Commands, VerifyTarget};
-use conduit_cli::modrinth::ModrinthAPI;
+use conduit_cli::core::modrinth::ModrinthAPI;
 
 use crate::cli::commands;
 

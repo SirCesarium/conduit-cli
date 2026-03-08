@@ -1,4 +1,4 @@
-use crate::modrinth::models::Version;
+use crate::core::modrinth::models::Version;
 
 use super::client::ModrinthAPI;
 

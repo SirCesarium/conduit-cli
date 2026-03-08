@@ -3,7 +3,7 @@ use conduit_cli::core::installer::extra_deps::ExtraDepsPolicy;
 use conduit_cli::core::installer::project::{InstallProjectOptions, sync_project};
 use conduit_cli::core::local_mods::find_missing_local_mods;
 use conduit_cli::core::paths::CorePaths;
-use conduit_cli::modrinth::ModrinthAPI;
+use conduit_cli::core::modrinth::ModrinthAPI;
 use console::style;
 use inquire::Confirm;
 

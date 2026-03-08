@@ -1,5 +1,6 @@
+use crate::core::modrinth::models::Project;
+
 use super::client::ModrinthAPI;
-use crate::modrinth::models::Project;
 
 impl ModrinthAPI {
     pub async fn get_project(&self, id_or_slug: &str) -> Result<Project, reqwest::Error> {

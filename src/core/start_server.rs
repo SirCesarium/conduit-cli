@@ -1,7 +1,8 @@
 use crate::core::events::CoreCallbacks;
 use crate::core::io::project::ProjectFiles;
+use crate::core::runtime::loaders;
 use crate::core::paths::CorePaths;
-use crate::server_launcher::ServerLauncher;
+use crate::core::runtime::launchers::ServerLauncher;
 use std::error::Error;
 
 pub async fn start_server(
@@ -16,7 +17,7 @@ pub async fn start_server(
         .loader_version
         .ok_or("No loader version found in lock file")?;
 
-    let loader_info = crate::loaders::LoaderInfo::parse(&loader_raw);
+    let loader_info = loaders::LoaderInfo::parse(&loader_raw);
     let loader_version = loader_info.version;
 
     let launcher = match loader_info.name.to_lowercase().as_str() {

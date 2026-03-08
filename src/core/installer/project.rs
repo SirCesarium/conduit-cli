@@ -5,7 +5,7 @@ use crate::core::installer::sync::sync_from_lock;
 use crate::core::io::project::lock::{LockedMod, ModSide};
 use crate::core::io::project::{ConduitConfig, ConduitLock, ProjectFiles};
 use crate::core::paths::CorePaths;
-use crate::modrinth::ModrinthAPI;
+use crate::core::modrinth::ModrinthAPI;
 use std::collections::HashSet;
 use std::fs;
 use std::path::PathBuf;

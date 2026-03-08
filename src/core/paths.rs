@@ -1,6 +1,6 @@
-use crate::{
-    core::error::{CoreError, CoreResult},
-    loaders::LoaderType,
+use crate::core::{
+    error::{CoreError, CoreResult},
+    runtime::loaders::LoaderType,
 };
 use std::path::{Path, PathBuf};
 

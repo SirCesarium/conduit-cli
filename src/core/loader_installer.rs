@@ -1,8 +1,8 @@
 use crate::core::error::{CoreError, CoreResult};
 use crate::core::events::CoreCallbacks;
 use crate::core::io::project::{InstanceType, ProjectFiles};
+use crate::core::runtime::loaders::{LoaderInfo, LoaderType};
 use crate::core::paths::CorePaths;
-use crate::loaders::{LoaderType, LoaderInfo};
 
 pub async fn install_loader(
     paths: &CorePaths,

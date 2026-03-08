@@ -2,7 +2,7 @@ use crate::core::error::{CoreError, CoreResult};
 use crate::core::io::project::ProjectFiles;
 use crate::core::io::project::lock::{LockedMod, ModSide};
 use crate::core::paths::CorePaths;
-use crate::java_inspector::JarInspector;
+use crate::core::java_inspector::JarInspector;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 use std::fs;

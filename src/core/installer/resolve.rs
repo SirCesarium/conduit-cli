@@ -6,9 +6,9 @@ use crate::core::installer::extra_deps::{
 };
 use crate::core::io::project::lock::{LockedMod, ModSide};
 use crate::core::io::project::{ConduitConfig, ConduitLock};
+use crate::core::java_inspector::JarInspector;
+use crate::core::modrinth::ModrinthAPI;
 use crate::core::paths::CorePaths;
-use crate::java_inspector::JarInspector;
-use crate::modrinth::ModrinthAPI;
 use async_recursion::async_recursion;
 use std::fs;
 use std::path::Path;
@@ -141,9 +141,10 @@ async fn install_recursive(
     let mut current_deps = Vec::new();
     for dep in &selected_version.dependencies {
         if dep.dependency_type == "required"
-            && let Some(proj_id) = &dep.project_id {
-                current_deps.push(proj_id.clone());
-            }
+            && let Some(proj_id) = &dep.project_id
+        {
+            current_deps.push(proj_id.clone());
+        }
     }
 
     lock.locked_mods.insert(
@@ -155,7 +156,7 @@ async fn install_recursive(
             url: file.url.clone(),
             hash: sha1,
             dependencies: current_deps.clone(),
-            side: ModSide::Both // TODO: update crawler to use real mod side here
+            side: ModSide::Both, // TODO: update crawler to use real mod side here
         },
     );
 
@@ -311,9 +312,10 @@ async fn crawl_extra_dependencies(
         if let Some(installed_mod) = ctx.lock.locked_mods.get(&slug_to_install) {
             let installed_id = installed_mod.id.clone();
             if let Some(parent) = ctx.lock.locked_mods.get_mut(parent_slug)
-                && !parent.dependencies.contains(&installed_id) {
-                    parent.dependencies.push(installed_id);
-                }
+                && !parent.dependencies.contains(&installed_id)
+            {
+                parent.dependencies.push(installed_id);
+            }
         }
     }
 

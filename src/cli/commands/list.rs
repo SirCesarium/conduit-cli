@@ -2,7 +2,7 @@ use conduit_cli::core::io::project::{ConduitLock, ProjectFiles};
 use console::style;
 use conduit_cli::core::lister::build_list_report;
 use conduit_cli::core::paths::CorePaths;
-use conduit_cli::modrinth::ModrinthAPI;
+use conduit_cli::core::modrinth::ModrinthAPI;
 
 pub async fn run(_api: &ModrinthAPI) -> Result<(), Box<dyn std::error::Error>> {
     let paths = CorePaths::from_project_dir(".")?;
