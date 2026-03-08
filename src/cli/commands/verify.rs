@@ -1,7 +1,7 @@
 use crate::cli::VerifyTarget;
 use console::style;
 use conduit_cli::core::paths::CorePaths;
-use conduit_cli::core::verify::{verify_project, VerifyScope};
+use conduit_cli::core::project::verify::{verify_project, VerifyScope};
 
 pub async fn run(target: VerifyTarget) -> Result<(), Box<dyn std::error::Error>> {
     let paths = CorePaths::from_project_dir(".")?;

@@ -1,9 +1,8 @@
 pub mod error;
 pub mod events;
-pub mod initializer;
 pub mod installer;
 pub mod io;
-pub mod lister;
+pub mod project;
 pub mod loader_installer;
 pub mod modrinth;
 pub mod local_mods;
@@ -11,5 +10,4 @@ pub mod runtime;
 pub mod paths;
 pub mod remover;
 pub mod start_server;
-pub mod verify;
 pub mod java_inspector;

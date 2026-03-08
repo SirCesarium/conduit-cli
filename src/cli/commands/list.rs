@@ -1,6 +1,6 @@
 use conduit_cli::core::io::project::{ConduitLock, ProjectFiles};
 use console::style;
-use conduit_cli::core::lister::build_list_report;
+use conduit_cli::core::project::lister::build_list_report;
 use conduit_cli::core::paths::CorePaths;
 use conduit_cli::core::modrinth::ModrinthAPI;
 
