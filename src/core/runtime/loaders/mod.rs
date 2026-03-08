@@ -1,4 +1,5 @@
 use crate::core::events::CoreCallbacks;
+use std::path::{Path, PathBuf};
 
 pub mod neoforge;
 
@@ -9,13 +10,9 @@ pub struct LoaderInfo {
 
 impl LoaderInfo {
     pub fn parse(loader_str: &str) -> Self {
-        let parts: Vec<&str> = loader_str.split('@').collect();
-        let name = parts[0].to_string();
-        let version = if parts.len() > 1 {
-            parts[1].to_string()
-        } else {
-            "latest".to_string()
-        };
+        let mut parts = loader_str.split('@');
+        let name = parts.next().unwrap_or("").to_string();
+        let version = parts.next().unwrap_or("latest").to_string();
         Self { name, version }
     }
 }
@@ -31,7 +28,7 @@ impl LoaderType {
         callbacks: &mut dyn CoreCallbacks,
     ) -> Result<String, Box<dyn std::error::Error>> {
         match self {
-            LoaderType::NeoForge => neoforge::get_latest_neoforge_version(mc_version, callbacks).await,
+            Self::NeoForge => neoforge::get_latest_neoforge_version(mc_version, callbacks).await,
         }
     }
 
@@ -39,11 +36,11 @@ impl LoaderType {
         &self,
         mc_version: &str,
         loader_version: &str,
-        install_path: &std::path::Path,
+        install_path: &Path,
         callbacks: &mut dyn CoreCallbacks,
-    ) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
+    ) -> Result<PathBuf, Box<dyn std::error::Error>> {
         match self {
-            LoaderType::NeoForge => {
+            Self::NeoForge => {
                 neoforge::download_neoforge_installer(
                     mc_version,
                     loader_version,
@@ -57,25 +54,23 @@ impl LoaderType {
 
     pub async fn execute_installer(
         &self,
-        installer_path: &std::path::Path,
+        installer_path: &Path,
         callbacks: &mut dyn CoreCallbacks,
-    ) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
+    ) -> Result<PathBuf, Box<dyn std::error::Error>> {
         match self {
-            LoaderType::NeoForge => {
-                neoforge::execute_neoforge_installer(installer_path, callbacks).await
-            }
+            Self::NeoForge => neoforge::execute_neoforge_installer(installer_path, callbacks).await,
         }
     }
 
-    pub async fn post_install(
+    pub fn post_install(
         &self,
-        installer_path: &std::path::Path,
-        install_path: &std::path::Path,
+        installer_path: &Path,
+        install_path: &Path,
         callbacks: &mut dyn CoreCallbacks,
     ) -> Result<(), Box<dyn std::error::Error>> {
         match self {
-            LoaderType::NeoForge => {
-                neoforge::post_install_neoforge(installer_path, install_path, callbacks).await
+            Self::NeoForge => {
+                neoforge::post_install_neoforge(installer_path, install_path, callbacks)
             }
         }
     }

@@ -32,8 +32,7 @@ impl CliUi {
         let needs_new = self
             .download_filename
             .as_ref()
-            .map(|f| f != filename)
-            .unwrap_or(true)
+            .is_none_or(|f| f != filename)
             || self.download_total != total_bytes;
 
         if !needs_new {
@@ -54,17 +53,18 @@ impl CliUi {
 }
 
 impl CoreCallbacks for CliUi {
+    #[allow(clippy::too_many_lines)]
     fn on_event(&mut self, event: CoreEvent) {
         match event {
             CoreEvent::WorldPreparationProgress { percentage } => {
                 if let Some(pb) = &self.spinner_pb {
-                    pb.set_position(percentage as u64);
+                    pb.set_position(u64::from(percentage));
                     pb.set_message(format!("{}", style("🌍 Preparing world...").cyan()));
                 }
                 return;
             }
             CoreEvent::ChatPromptRequested { sender } => {
-                print!("\r{} ", style(format!("<{}>", sender)).yellow());
+                print!("\r{} ", style(format!("<{sender}>")).yellow());
                 let _ = std::io::stdout().flush();
                 return;
             }
@@ -96,7 +96,7 @@ impl CoreCallbacks for CliUi {
                 ));
                 self.spinner_pb = Some(pb);
             }
-            CoreEvent::WorldPreparationFinished => {
+            CoreEvent::WorldPreparationFinished | CoreEvent::TaskFinished => {
                 if let Some(pb) = self.spinner_pb.take() {
                     pb.finish_and_clear();
                 }
@@ -121,14 +121,9 @@ impl CoreCallbacks for CliUi {
                 let pb = ConduitProgress::simple_spinner(msg);
                 self.spinner_pb = Some(pb);
             }
-            CoreEvent::TaskFinished => {
-                if let Some(pb) = self.spinner_pb.take() {
-                    pb.finish_and_clear();
-                }
-            }
             CoreEvent::Warning(msg) => println!("{} {}", style("!").yellow(), msg),
             CoreEvent::Installed { slug: _, title } => {
-                println!("{} Installed {}", style("✔").green(), style(title).bold())
+                println!("{} Installed {}", style("✔").green(), style(title).bold());
             }
             CoreEvent::AddedAsDependency { slug } => println!(
                 "{} Added {} as dependency",
@@ -141,15 +136,15 @@ impl CoreCallbacks for CliUi {
                 style(slug).bold()
             ),
             CoreEvent::LinkedFile { filename } => {
-                println!("{} Linked {}", style("🔗").dim(), style(filename).green())
+                println!("{} Linked {}", style("🔗").dim(), style(filename).green());
             }
             CoreEvent::Purged { slug } => {
-                println!("{} Purged {}", style("🗑").dim(), style(slug).dim().italic())
+                println!("{} Purged {}", style("🗑").dim(), style(slug).dim().italic());
             }
             CoreEvent::ChatModeStarted { sender } => {
                 println!(
                     "\n{}",
-                    style(format!("─── Chat Mode Enabled (Sender: {}) ───\n", sender))
+                    style(format!("─── Chat Mode Enabled (Sender: {sender}) ───\n"))
                         .cyan()
                         .bold()
                 );
@@ -159,7 +154,7 @@ impl CoreCallbacks for CliUi {
                     style(":e").yellow(),
                     style(":q").yellow()
                 );
-                print!("{} ", style(format!("<{}>", sender)).yellow());
+                print!("{} ", style(format!("<{sender}>")).yellow());
                 let _ = std::io::stdout().flush();
             }
             CoreEvent::ChatModeStopped => {
@@ -168,7 +163,7 @@ impl CoreCallbacks for CliUi {
             }
             CoreEvent::ChatMessageSent { sender, message } => println!(
                 "{} {}",
-                style(format!("<{}>", sender)).yellow().bold(),
+                style(format!("<{sender}>")).yellow().bold(),
                 style(message).white()
             ),
             CoreEvent::ServerLogEvent {
@@ -184,7 +179,7 @@ impl CoreCallbacks for CliUi {
                         style("💬").cyan(),
                         style(message).cyan().bold()
                     ),
-                    LogLevel::Info => println!("{} {}", time_fmt, message),
+                    LogLevel::Info => println!("{time_fmt} {message}"),
                     LogLevel::Warning => println!(
                         "{} {} {}",
                         time_fmt,
@@ -251,8 +246,7 @@ impl ExtraDepChooser for CliUi {
                 .candidates
                 .iter()
                 .find(|c| choice.contains(&c.slug))
-                .map(|c| ExtraDepDecision::InstallSlug(c.slug.clone()))
-                .unwrap_or(ExtraDepDecision::Skip),
+                .map_or(ExtraDepDecision::Skip, |c| ExtraDepDecision::InstallSlug(c.slug.clone())),
             _ => ExtraDepDecision::Skip,
         }
     }

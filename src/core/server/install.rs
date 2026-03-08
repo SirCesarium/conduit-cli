@@ -1,8 +1,8 @@
 use crate::core::error::{CoreError, CoreResult};
 use crate::core::events::CoreCallbacks;
 use crate::core::io::project::{InstanceType, ProjectFiles};
-use crate::core::runtime::loaders::{LoaderInfo, LoaderType};
 use crate::core::paths::CorePaths;
+use crate::core::runtime::loaders::{LoaderInfo, LoaderType};
 
 pub async fn install_loader(
     paths: &CorePaths,
@@ -40,9 +40,7 @@ pub async fn install_loader(
 
     let installer_path = loader.execute_installer(&loader_dir, callbacks).await?;
 
-    loader
-        .post_install(&installer_path, paths.project_dir(), callbacks)
-        .await?;
+    loader.post_install(&installer_path, paths.project_dir(), callbacks)?;
 
     let mut lock = ProjectFiles::load_lock(paths)?;
 

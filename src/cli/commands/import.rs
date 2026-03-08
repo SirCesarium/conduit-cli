@@ -7,14 +7,14 @@ use std::path::PathBuf;
 
 use crate::cli::ui::CliUi;
 
-pub fn run(input: String, yes: bool) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run(input: &str, yes: bool) -> Result<(), Box<dyn std::error::Error>> {
     let paths = CorePaths::from_project_dir(".")?;
     let mut ui = CliUi::new();
-    let provider = get_provider(PackFormat::Conduit);
+    let provider = get_provider(&PackFormat::Conduit);
     let input_path = PathBuf::from(&input);
 
     if !input_path.exists() {
-        return Err(format!("File not found: {}", input).into());
+        return Err(format!("File not found: {input}").into());
     }
 
     let analysis = provider.analyze(&input_path)?;
@@ -37,7 +37,12 @@ pub fn run(input: String, yes: bool) -> Result<(), Box<dyn std::error::Error>> {
             )));
         }
 
-        if !yes {
+        if yes {
+            println!(
+                "{} Flag --yes detected. Skipping confirmation prompts...",
+                style("!").yellow()
+            );
+        } else {
             let prompt: String = if analysis.dangerous_count > 0 {
                 style("Are you ABSOLUTELY sure you want to proceed?").red().to_string()
             } else {
@@ -50,11 +55,6 @@ pub fn run(input: String, yes: bool) -> Result<(), Box<dyn std::error::Error>> {
                 println!("{} Import cancelled by user.", style("✘").red());
                 return Ok(());
             }
-        } else {
-            println!(
-                "{} Flag --yes detected. Skipping confirmation prompts...",
-                style("!").yellow()
-            );
         }
     }
 

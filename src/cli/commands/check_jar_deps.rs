@@ -2,8 +2,8 @@ use conduit_cli::core::mods::inspector::JarInspector;
 use console::style;
 use std::error::Error;
 
-pub fn run(input: String) -> Result<(), Box<dyn Error>> {
-    match JarInspector::inspect_neoforge(&input) {
+pub fn run(input: &str) -> Result<(), Box<dyn Error>> {
+    match JarInspector::inspect_neoforge(input) {
         Ok(mods) => {
             println!(
                 "📦 Crawling dependencies in {}:",
@@ -19,7 +19,7 @@ pub fn run(input: String) -> Result<(), Box<dyn Error>> {
             }
         }
         Err(e) => {
-            return Err(format!("Failed to read JAR file: {}", e).into());
+            return Err(format!("Failed to read JAR file: {e}").into());
         }
     }
     Ok(())

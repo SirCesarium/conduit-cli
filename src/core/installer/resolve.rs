@@ -53,6 +53,7 @@ pub async fn install_mod(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_lines)]
 #[async_recursion(?Send)]
 async fn install_recursive(
     api: &ModrinthAPI,
@@ -119,7 +120,7 @@ async fn install_recursive(
 
     let sha1 = file.hashes.get("sha1").cloned().unwrap_or_default();
 
-    let cached_path = paths.cache_dir().join(format!("{}.jar", sha1));
+    let cached_path = paths.cache_dir().join(format!("{sha1}.jar"));
     let dest_path = paths.mods_dir().join(&file.filename);
 
     if !cached_path.exists() {
@@ -210,9 +211,8 @@ async fn crawl_extra_dependencies(
     jar_path: &Path,
     parent_slug: &str,
 ) -> CoreResult<()> {
-    let internal_deps = match JarInspector::inspect_neoforge(jar_path) {
-        Ok(deps) => deps,
-        Err(_) => return Ok(()),
+    let Ok(internal_deps) = JarInspector::inspect_neoforge(jar_path) else {
+        return Ok(());
     };
 
     let loader_filter = ctx
@@ -233,10 +233,7 @@ async fn crawl_extra_dependencies(
             continue;
         }
 
-        let facets = format!(
-            "[[\"categories:{}\"],[\"versions:{}\"]]",
-            loader_filter, mc_version
-        );
+        let facets = format!("[[\"categories:{loader_filter}\"],[\"versions:{mc_version}\"]]");
         let search_results = ctx
             .api
             .search(&tech_id, 5, 0, "relevance", Some(facets))
@@ -278,8 +275,7 @@ async fn crawl_extra_dependencies(
             ExtraDepsPolicy::Skip => ExtraDepDecision::Skip,
             ExtraDepsPolicy::AutoExactMatch => exact_match_slug
                 .clone()
-                .map(ExtraDepDecision::InstallSlug)
-                .unwrap_or(ExtraDepDecision::Skip),
+                .map_or(ExtraDepDecision::Skip, ExtraDepDecision::InstallSlug),
             ExtraDepsPolicy::Callback => ctx.ui.choose_extra_dep(ExtraDepRequest {
                 tech_id: tech_id.clone(),
                 parent_slug: parent_slug.to_string(),

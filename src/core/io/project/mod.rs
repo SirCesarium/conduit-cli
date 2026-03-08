@@ -19,7 +19,7 @@ impl ProjectFiles {
     pub fn save_manifest(paths: &CorePaths, config: &ConduitConfig) -> CoreResult<()> {
         let json = config.to_json()?;
         fs::write(paths.manifest_path(), json)
-            .map_err(|e| CoreError::RuntimeError(format!("Failed to write conduit.json: {}", e)))
+            .map_err(|e| CoreError::RuntimeError(format!("Failed to write conduit.json: {e}")))
     }
 
     pub fn load_lock(paths: &CorePaths) -> CoreResult<ConduitLock> {
@@ -28,13 +28,13 @@ impl ProjectFiles {
             return Ok(ConduitLock::default());
         }
         let content = fs::read_to_string(path)
-            .map_err(|e| CoreError::RuntimeError(format!("Failed to read conduit.lock: {}", e)))?;
+            .map_err(|e| CoreError::RuntimeError(format!("Failed to read conduit.lock: {e}")))?;
         ConduitLock::from_toml(&content)
     }
 
     pub fn save_lock(paths: &CorePaths, lock: &ConduitLock) -> CoreResult<()> {
         let toml = lock.to_toml_with_header()?;
         fs::write(paths.lock_path(), toml)
-            .map_err(|e| CoreError::RuntimeError(format!("Failed to write conduit.lock: {}", e)))
+            .map_err(|e| CoreError::RuntimeError(format!("Failed to write conduit.lock: {e}")))
     }
 }

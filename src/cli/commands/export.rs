@@ -3,9 +3,9 @@ use conduit_cli::core::paths::CorePaths;
 use console::style;
 use std::path::PathBuf;
 
-pub fn run(output: String, include_config: bool) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run(output: &str, include_config: bool) -> Result<(), Box<dyn std::error::Error>> {
     let paths = CorePaths::from_project_dir(".")?;
-    let provider = get_provider(PackFormat::Conduit);
+    let provider = get_provider(&PackFormat::Conduit);
     let output_path = PathBuf::from(&output);
 
     println!("{} Exporting modpack to {}...", style("📦").cyan(), style(&output).bold());

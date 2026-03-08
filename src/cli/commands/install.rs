@@ -65,7 +65,7 @@ pub async fn run(
             println!(
                 "  {} {}",
                 style("conduit add").yellow().bold(),
-                style(format!("f:./{}", filename)).cyan()
+                style(format!("f:./{filename}")).cyan()
             );
         }
 
@@ -73,7 +73,7 @@ pub async fn run(
             println!(
                 "  {} {}",
                 style("conduit add").yellow().bold(),
-                style(format!("f:<path-to-jar>  # for local mod '{}'", key)).cyan()
+                style(format!("f:<path-to-jar>  # for local mod '{key}'")).cyan()
             );
         }
 

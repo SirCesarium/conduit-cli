@@ -25,7 +25,7 @@ impl CorePaths {
         if !cache_dir.exists() {
             std::fs::create_dir_all(&cache_dir)
                 .map_err(|e| CoreError::RuntimeError(e.to_string()))?;
-        };
+        }
 
         Ok(Self {
             manifest_path: project_dir.join("conduit.json"),

@@ -19,7 +19,7 @@ pub struct ConduitLock {
     pub loader_version: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LockedMod {
     pub id: String,
     pub version_id: String,
@@ -33,7 +33,7 @@ pub struct LockedMod {
 impl ConduitLock {
     pub fn from_toml(content: &str) -> CoreResult<Self> {
         toml::from_str(content)
-            .map_err(|e| CoreError::RuntimeError(format!("Failed to parse conduit.lock: {}", e)))
+            .map_err(|e| CoreError::RuntimeError(format!("Failed to parse conduit.lock: {e}")))
     }
 
     #[rustfmt::skip]
@@ -53,7 +53,7 @@ impl ConduitLock {
         content.push_str("# ---------------------------------------------------------------------------- #\n\n");
 
         let serialized = toml::to_string_pretty(self).map_err(|e| {
-            CoreError::RuntimeError(format!("Failed to serialize lock: {}", e))
+            CoreError::RuntimeError(format!("Failed to serialize lock: {e}"))
         })?;
 
         content.push_str(&serialized);

@@ -1,5 +1,6 @@
+use std::collections::HashSet;
 use std::fs::{self, File};
-use std::io::Write;
+use std::io::{Write, copy};
 use std::path::Path;
 use walkdir::WalkDir;
 use zip::write::SimpleFileOptions;
@@ -32,7 +33,7 @@ impl ModpackProvider for ConduitProvider {
         include_config: bool,
     ) -> CoreResult<()> {
         let manifest = ProjectFiles::load_manifest(paths)?;
-        let mut local_mod_filenames = std::collections::HashSet::new();
+        let mut local_mod_filenames = HashSet::new();
 
         if paths.lock_path().exists() {
             let lock = ProjectFiles::load_lock(paths)?;
@@ -94,7 +95,7 @@ impl ModpackProvider for ConduitProvider {
 
             for entry in WalkDir::new(&folder_path)
                 .into_iter()
-                .filter_map(|e| e.ok())
+                .filter_map(Result::ok)
             {
                 if entry.path().is_file() {
                     let filename = entry.file_name().to_string_lossy().to_string();
@@ -130,7 +131,7 @@ impl ModpackProvider for ConduitProvider {
             zip::ZipArchive::new(file).map_err(|e| CoreError::RuntimeError(e.to_string()))?;
 
         let mut files = Vec::new();
-        let mut extensions = std::collections::HashSet::new();
+        let mut extensions = HashSet::new();
         let mut suspicious = Vec::new();
         let mut dangerous_count = 0;
         let mut local_jars_count = 0;
@@ -150,13 +151,17 @@ impl ModpackProvider for ConduitProvider {
 
                     if Self::is_dangerous(&ext_lower) {
                         dangerous_count += 1;
-                        suspicious.push(format!("[DANGER] {}", name));
+                        suspicious.push(format!("[DANGER] {name}"));
                     }
                 }
 
-                if name.contains("overrides/") && name.ends_with(".jar") {
+                if name.contains("overrides/")
+                    && Path::new(&name)
+                        .extension()
+                        .is_some_and(|ext| ext.eq_ignore_ascii_case("jar"))
+                {
                     local_jars_count += 1;
-                    suspicious.push(format!("[LOCAL JAR] {}", name));
+                    suspicious.push(format!("[LOCAL JAR] {name}"));
                 }
             }
         }
@@ -201,9 +206,15 @@ impl ModpackProvider for ConduitProvider {
                     fs::create_dir_all(p)?;
                 }
                 let mut outfile = File::create(&outpath)?;
-                std::io::copy(&mut file, &mut outfile)?;
+                copy(&mut file, &mut outfile)?;
 
-                if raw_name.ends_with(".json") || raw_name.ends_with(".lock") {
+                if Path::new(&raw_name)
+                    .extension()
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case("json"))
+                    || Path::new(&raw_name)
+                        .extension()
+                        .is_some_and(|ext| ext.eq_ignore_ascii_case("lock"))
+                {
                     callbacks.on_event(CoreEvent::LinkedFile { filename: raw_name });
                 }
             }

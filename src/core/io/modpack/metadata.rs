@@ -35,13 +35,13 @@ pub struct ContentFlags {
 impl ConduitPackMetadata {
     pub fn to_toml(&self) -> CoreResult<String> {
         toml::to_string(self).map_err(|e| {
-            CoreError::RuntimeError(format!("Failed to serialize pack metadata: {}", e))
+            CoreError::RuntimeError(format!("Failed to serialize pack metadata: {e}"))
         })
     }
 
     pub fn from_toml(content: &str) -> CoreResult<Self> {
         toml::from_str(content).map_err(|e| {
-            CoreError::RuntimeError(format!("Failed to parse pack metadata: {}", e))
+            CoreError::RuntimeError(format!("Failed to parse pack metadata: {e}"))
         })
     }
 }

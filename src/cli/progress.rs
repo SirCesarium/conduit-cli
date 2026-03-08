@@ -17,10 +17,11 @@ impl ConduitProgress {
                 "raw_bar",
                 |state: &indicatif::ProgressState, w: &mut dyn std::fmt::Write| {
                     let pct = state.fraction();
+                    #[allow(clippy::cast_sign_loss)]
                     let fill_len = (pct * 20.0) as usize;
                     let fill = "≋".repeat(fill_len);
                     let empty = " ".repeat(20 - fill_len);
-                    write!(w, "{}{}", fill, empty).unwrap();
+                    write!(w, "{fill}{empty}").unwrap();
                 },
             )
             .tick_strings(&["⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"]),

@@ -83,7 +83,7 @@ impl ServerLauncher {
         };
 
         if let Err(e) = launch_generic_server(launch_cmd, callbacks, show_logs).await {
-            callbacks.on_event(CoreEvent::Error(format!("Launcher failed: {}", e)));
+            callbacks.on_event(CoreEvent::Error(format!("Launcher failed: {e}")));
         }
     }
 }

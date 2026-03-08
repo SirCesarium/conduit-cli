@@ -20,17 +20,14 @@ pub async fn run(show_logs: bool, show_gui: bool) -> Result<(), Box<dyn Error>> 
         }
     };
 
-    let lock = match ProjectFiles::load_lock(&paths) {
-        Ok(l) => l,
-        Err(_) => {
-            println!(
-                "{} No {} found. Please run {} first.",
-                style("!").yellow(),
-                style("conduit.lock").bold(),
-                style("conduit install").cyan()
-            );
-            return Ok(());
-        }
+    let Ok(lock) = ProjectFiles::load_lock(&paths) else {
+        println!(
+            "{} No {} found. Please run {} first.",
+            style("!").yellow(),
+            style("conduit.lock").bold(),
+            style("conduit install").cyan()
+        );
+        return Ok(());
     };
 
     let loader_raw = lock
@@ -39,16 +36,15 @@ pub async fn run(show_logs: bool, show_gui: bool) -> Result<(), Box<dyn Error>> 
     let loader_info = LoaderInfo::parse(&loader_raw);
     let loader_version = loader_info.version;
 
-    let launcher = match loader_info.name.to_lowercase().as_str() {
-        "neoforge" => ServerLauncher::Neoforge,
-        _ => {
-            println!(
-                "{} Unsupported loader: {}",
-                style("✘").red(),
-                loader_info.name
-            );
-            return Ok(());
-        }
+    let launcher = if loader_info.name.to_lowercase().as_str() == "neoforge" {
+        ServerLauncher::Neoforge
+    } else {
+        println!(
+            "{} Unsupported loader: {}",
+            style("✘").red(),
+            loader_info.name
+        );
+        return Ok(());
     };
 
     if !launcher.is_ready(&paths, &loader_version) {

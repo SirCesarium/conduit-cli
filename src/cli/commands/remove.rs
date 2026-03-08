@@ -4,12 +4,12 @@ use conduit_cli::core::mods::remover::remove_mod;
 use conduit_cli::core::paths::CorePaths;
 use console::style;
 
-pub async fn run(input: String) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run(input: &str) -> Result<(), Box<dyn std::error::Error>> {
     let paths = CorePaths::from_project_dir(".")?;
     let mut config = ProjectFiles::load_manifest(&paths)?;
     let mut lock = ProjectFiles::load_lock(&paths)?;
 
-    if !config.mods.contains_key(&input) {
+    if !config.mods.contains_key(input) {
         println!(
             "{} Mod {} not found in config",
             style("!").yellow(),
@@ -19,10 +19,10 @@ pub async fn run(input: String) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let mut dependents = Vec::new();
-    if let Some(target_mod) = lock.locked_mods.get(&input) {
+    if let Some(target_mod) = lock.locked_mods.get(input) {
         let target_id = &target_mod.id;
         for (slug, info) in &lock.locked_mods {
-            if slug != &input
+            if slug != input
                 && config.mods.contains_key(slug)
                 && info.dependencies.contains(target_id)
             {
@@ -48,7 +48,7 @@ pub async fn run(input: String) -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let mut cb = CliCallbacks;
-    let _ = remove_mod(&paths, &input, &mut config, &mut lock, &mut cb)?;
+    let _ = remove_mod(&paths, input, &mut config, &mut lock, &mut cb)?;
 
     ProjectFiles::save_manifest(&paths, &config)?;
     ProjectFiles::save_lock(&paths, &lock)?;

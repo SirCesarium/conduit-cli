@@ -1,6 +1,8 @@
 use crate::core::events::{CoreCallbacks, CoreEvent};
 use crate::core::runtime::launchers::chat::ChatManager;
-use crate::core::runtime::launchers::log_processor::{handle_exit_failure, notify_startup, parse_log};
+use crate::core::runtime::launchers::log_processor::{
+    handle_exit_failure, notify_startup, parse_log,
+};
 use std::path::PathBuf;
 use std::process::Stdio;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -12,14 +14,90 @@ pub struct LaunchCommand {
     pub current_dir: PathBuf,
 }
 
-pub async fn launch_generic_server(
-    cmd_config: LaunchCommand,
+fn handle_world_loading(
+    line: &str,
+    started: &mut bool,
+    preparing: &mut bool,
+    show_logs: bool,
     callbacks: &mut dyn CoreCallbacks,
-    mut show_logs: bool,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::new(cmd_config.program);
-    cmd.args(cmd_config.args)
-        .current_dir(cmd_config.current_dir)
+) -> bool {
+    let mut trigger_log = true;
+
+    if !*started && line.contains("Done (") {
+        if *preparing {
+            callbacks.on_event(CoreEvent::WorldPreparationFinished);
+            *preparing = false;
+        }
+        return true;
+    }
+
+    if !*started
+        && !*preparing
+        && (line.contains("Preparing level") || line.contains("Preparing start region"))
+    {
+        *preparing = true;
+        if !show_logs {
+            callbacks.on_event(CoreEvent::WorldPreparationStarted);
+        }
+    }
+
+    if *preparing
+        && line.contains('%')
+        && let Some(pos) = line.find('%')
+    {
+        let before = &line[..pos];
+        if let Some(num_str) = before.split_whitespace().last()
+            && let Ok(pct) = num_str.parse::<u8>()
+        {
+            callbacks.on_event(CoreEvent::WorldPreparationProgress { percentage: pct });
+            if !show_logs {
+                trigger_log = false;
+            }
+        }
+    }
+    trigger_log
+}
+
+fn process_server_line(
+    line: String,
+    started: &mut bool,
+    preparing_world: &mut bool,
+    show_logs: &mut bool,
+    error_buffer: &mut Vec<String>,
+    chat_manager: &ChatManager,
+    callbacks: &mut dyn CoreCallbacks,
+) {
+    let trigger_log = handle_world_loading(&line, started, preparing_world, *show_logs, callbacks);
+
+    if !*started && line.contains("Done (") {
+        notify_startup(started, show_logs, callbacks);
+    }
+
+    if (*started || *show_logs) && trigger_log {
+        let (level, message, timestamp) = parse_log(&line);
+        callbacks.on_event(CoreEvent::ServerLogEvent {
+            level,
+            message,
+            timestamp,
+        });
+
+        if chat_manager.is_active() {
+            callbacks.on_event(CoreEvent::ChatPromptRequested {
+                sender: chat_manager.get_name(),
+            });
+        }
+    }
+
+    if error_buffer.len() >= 30 {
+        error_buffer.remove(0);
+    }
+    error_buffer.push(line);
+}
+
+fn setup_command(cmd_config: &LaunchCommand) -> Command {
+    let mut cmd = Command::new(&cmd_config.program);
+    cmd.args(&cmd_config.args)
+        .current_dir(&cmd_config.current_dir)
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit())
         .stdin(Stdio::piped());
@@ -32,7 +110,15 @@ pub async fn launch_generic_server(
             Ok(())
         });
     }
+    cmd
+}
 
+pub async fn launch_generic_server(
+    cmd_config: LaunchCommand,
+    callbacks: &mut dyn CoreCallbacks,
+    mut show_logs: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut cmd = setup_command(&cmd_config);
     let mut child = cmd.spawn()?;
 
     if !show_logs {
@@ -61,7 +147,7 @@ pub async fn launch_generic_server(
 
     let write_handle = tokio::spawn(async move {
         while let Some(msg) = rx_from_anywhere.recv().await {
-            let _ = stdin.write_all(format!("{}\n", msg).as_bytes()).await;
+            let _ = stdin.write_all(format!("{msg}\n").as_bytes()).await;
             let _ = stdin.flush().await;
         }
     });
@@ -79,43 +165,15 @@ pub async fn launch_generic_server(
             line_result = reader.next_line() => {
                 match line_result? {
                     Some(line) => {
-                        let mut trigger_log = true;
-
-                        if !started && line.contains("Done (") {
-                            if preparing_world {
-                                callbacks.on_event(CoreEvent::WorldPreparationFinished);
-                                preparing_world = false;
-                            }
-                            notify_startup(&mut started, &mut show_logs, callbacks);
-                        }
-
-                        if !started && !preparing_world && (line.contains("Preparing level") || line.contains("Preparing start region") || line.contains("Preparing spawn area")) {
-                            preparing_world = true;
-                            if !show_logs {
-                                callbacks.on_event(CoreEvent::WorldPreparationStarted);
-                            }
-                        }
-
-                        if preparing_world && line.contains('%')
-                            && let Some(pos) = line.find('%') {
-                                let before = &line[..pos];
-                                if let Some(num_str) = before.split_whitespace().last()
-                                    && let Ok(pct) = num_str.parse::<u8>() {
-                                        callbacks.on_event(CoreEvent::WorldPreparationProgress { percentage: pct });
-                                        if !show_logs { trigger_log = false; }
-                                    }
-                            }
-                        if (started || show_logs) && trigger_log {
-                            let (level, message, timestamp) = parse_log(&line);
-                            callbacks.on_event(CoreEvent::ServerLogEvent { level, message, timestamp });
-
-                            if chat_manager.is_active() {
-                                callbacks.on_event(CoreEvent::ChatPromptRequested { sender: chat_manager.get_name() });
-                            }
-                        }
-
-                        if error_buffer.len() >= 30 { error_buffer.remove(0); }
-                        error_buffer.push(line);
+                        process_server_line(
+                            line,
+                            &mut started,
+                            &mut preparing_world,
+                            &mut show_logs,
+                            &mut error_buffer,
+                            &chat_manager,
+                            callbacks
+                        );
                     }
                     None => break,
                 }

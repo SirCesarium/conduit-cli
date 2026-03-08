@@ -1,10 +1,10 @@
-use conduit_cli::core::io::project::{ConduitLock, ProjectFiles};
-use console::style;
-use conduit_cli::core::project::lister::build_list_report;
-use conduit_cli::core::paths::CorePaths;
+use conduit_cli::core::io::project::ProjectFiles;
 use conduit_cli::core::modrinth::ModrinthAPI;
+use conduit_cli::core::paths::CorePaths;
+use conduit_cli::core::project::lister::{ListReport, build_list_report};
+use console::style;
 
-pub async fn run(_api: &ModrinthAPI) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run(_api: &ModrinthAPI) -> Result<(), Box<dyn std::error::Error>> {
     let paths = CorePaths::from_project_dir(".")?;
     let config = ProjectFiles::load_manifest(&paths)?;
     let lock = ProjectFiles::load_lock(&paths)?;
@@ -24,10 +24,10 @@ pub async fn run(_api: &ModrinthAPI) -> Result<(), Box<dyn std::error::Error>> {
                 "{} {} {}",
                 status,
                 style(slug).cyan(),
-                style(format!("({})", version)).dim()
+                style(format!("({version})")).dim()
             );
 
-            print_deps(slug, &lock, &report.files_on_disk, 1);
+            print_deps(slug, &report, 1);
         } else {
             println!(
                 "{} {} {}",
@@ -70,35 +70,30 @@ pub async fn run(_api: &ModrinthAPI) -> Result<(), Box<dyn std::error::Error>> {
 
 fn print_deps(
     slug: &str,
-    lock: &ConduitLock,
-    disk: &std::collections::HashSet<String>,
+    report: &ListReport, // Quitamos el lock
     indent: usize,
 ) {
-    if let Some(locked) = lock.locked_mods.get(slug) {
-        for dep_id in &locked.dependencies {
-            if let Some((dep_slug, dep_info)) =
-                lock.locked_mods.iter().find(|(_, m)| &m.id == dep_id)
-            {
-                let pipe = if indent > 0 { "└──" } else { "" };
-                let spacing = "    ".repeat(indent - 1);
+    if let Some(deps) = report.dependency_map.get(slug) {
+        for (dep_slug, dep_info) in deps {
+            let pipe = if indent > 0 { "└──" } else { "" };
+            let spacing = "    ".repeat(indent - 1);
 
-                let on_disk = if disk.contains(&dep_info.filename) {
-                    style("✔").green()
-                } else {
-                    style("✘").red()
-                };
+            let on_disk = if report.files_on_disk.contains(&dep_info.filename) {
+                style("✔").green()
+            } else {
+                style("✘").red()
+            };
 
-                println!(
-                    "{}{} {} {} {}",
-                    spacing,
-                    style(pipe).dim(),
-                    on_disk,
-                    style(dep_slug).dim(),
-                    style("(dep)").italic().dim()
-                );
+            println!(
+                "{}{} {} {} {}",
+                spacing,
+                style(pipe).dim(),
+                on_disk,
+                style(dep_slug).dim(),
+                style("(dep)").italic().dim()
+            );
 
-                print_deps(dep_slug, lock, disk, indent + 1);
-            }
+            print_deps(dep_slug, report, indent + 1);
         }
     }
 }

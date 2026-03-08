@@ -25,7 +25,7 @@ pub trait ModpackProvider {
     fn import(&self, paths: &CorePaths, input_path: &Path, callbacks: &mut dyn CoreCallbacks) -> CoreResult<()>;
 }
 
-pub fn get_provider(format: PackFormat) -> Box<dyn ModpackProvider> {
+pub fn get_provider(format: &PackFormat) -> Box<dyn ModpackProvider> {
     match format {
         PackFormat::Conduit => Box::new(conduit::ConduitProvider),
         // PackFormat::MrPack => Box::new(mrpack::MrPackProvider),

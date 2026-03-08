@@ -31,7 +31,7 @@ pub async fn get_latest_neoforge_version(
         parts.get(1).copied().unwrap_or("0")
     };
 
-    let prefix = format!("{}.{}.", major, minor);
+    let prefix = format!("{major}.{minor}.");
 
     let pattern = format!(r"<version>({}.*?)</version>", regex::escape(&prefix));
     let re = Regex::new(&pattern)?;
@@ -44,11 +44,10 @@ pub async fn get_latest_neoforge_version(
     let version = versions
         .last()
         .cloned()
-        .ok_or_else(|| format!("No compatible NeoForge version found for MC {}", mc_version))?;
+        .ok_or_else(|| format!("No compatible NeoForge version found for MC {mc_version}"))?;
 
     callbacks.on_event(CoreEvent::Info(format!(
-        "Found NeoForge version: {}",
-        version
+        "Found NeoForge version: {version}"
     )));
 
     Ok(version)
@@ -67,14 +66,13 @@ pub async fn download_neoforge_installer(
     };
 
     let url = format!(
-        "https://maven.neoforged.net/releases/net/neoforged/neoforge/{v}/neoforge-{v}-installer.jar",
-        v = version
+        "https://maven.neoforged.net/releases/net/neoforged/neoforge/{version}/neoforge-{version}-installer.jar"
     );
 
     let filename = "neoforge-installer.jar";
     let installer_path = install_path.join(filename);
 
-    let display_name = format!("neoforge-{}-installer.jar", version);
+    let display_name = format!("neoforge-{version}-installer.jar");
 
     download_to_path(&url, &installer_path, &display_name, callbacks).await?;
 
@@ -104,13 +102,13 @@ pub async fn execute_neoforge_installer(
     std::fs::remove_file(installer_path).ok();
 
     if !status.success() {
-        return Err(format!("Installer exited with code: {}", status).into());
+        return Err(format!("Installer exited with code: {status}").into());
     }
 
     Ok(installer_path.to_path_buf())
 }
 
-pub async fn post_install_neoforge(
+pub fn post_install_neoforge(
     installer_path: &std::path::Path,
     install_path: &Path,
     callbacks: &mut dyn CoreCallbacks,

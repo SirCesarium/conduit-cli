@@ -3,7 +3,7 @@ use console::style;
 use conduit_cli::core::paths::CorePaths;
 use conduit_cli::core::project::verify::{verify_project, VerifyScope};
 
-pub async fn run(target: VerifyTarget) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run(target: &VerifyTarget) -> Result<(), Box<dyn std::error::Error>> {
     let paths = CorePaths::from_project_dir(".")?;
 
     let scope = match target {

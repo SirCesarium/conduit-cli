@@ -1,11 +1,7 @@
 use crate::core::error::CoreResult;
 use crate::core::io::project::ProjectFiles;
 use crate::core::paths::CorePaths;
-use sha1::{Digest as Sha1Digest, Sha1};
-use sha2::Sha256;
-use std::fs;
-use std::io::Read;
-use std::path::Path;
+use crate::core::io::hash::{sha256_file, sha1_file};
 
 #[derive(Debug, Clone, Copy)]
 pub enum VerifyScope {
@@ -77,30 +73,3 @@ pub fn verify_project(paths: &CorePaths, scope: VerifyScope) -> CoreResult<Verif
     Ok(report)
 }
 
-fn sha1_file(path: &Path) -> CoreResult<String> {
-    let mut file = fs::File::open(path)?;
-    let mut hasher = Sha1::new();
-    let mut buf = [0u8; 8192];
-    loop {
-        let n = file.read(&mut buf)?;
-        if n == 0 {
-            break;
-        }
-        hasher.update(&buf[..n]);
-    }
-    Ok(format!("{:x}", hasher.finalize()))
-}
-
-fn sha256_file(path: &Path) -> CoreResult<String> {
-    let mut file = fs::File::open(path)?;
-    let mut hasher = Sha256::new();
-    let mut buf = [0u8; 8192];
-    loop {
-        let n = file.read(&mut buf)?;
-        if n == 0 {
-            break;
-        }
-        hasher.update(&buf[..n]);
-    }
-    Ok(format!("{:x}", hasher.finalize()))
-}

@@ -1,3 +1,15 @@
+#![warn(clippy::pedantic)]
+#![allow(
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::must_use_candidate,
+    clippy::module_name_repetitions,
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation,
+    clippy::missing_const_for_fn,
+    clippy::doc_markdown
+)]
+
 use clap::Parser;
 use console::style;
 
@@ -35,7 +47,7 @@ async fn main() {
             }
         }
         Commands::CheckJarDeps { input } => {
-            if let Err(e) = commands::check_jar_deps::run(input) {
+            if let Err(e) = commands::check_jar_deps::run(&input) {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
@@ -46,17 +58,17 @@ async fn main() {
         }
         Commands::Verify { target } => {
             let target = target.unwrap_or(VerifyTarget::Modrinth);
-            if let Err(e) = commands::verify::run(target).await {
+            if let Err(e) = commands::verify::run(&target) {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
         Commands::Remove { input } => {
-            if let Err(e) = commands::remove::run(input).await {
+            if let Err(e) = commands::remove::run(&input) {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
         Commands::List => {
-            if let Err(e) = commands::list::run(&api).await {
+            if let Err(e) = commands::list::run(&api) {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
@@ -75,7 +87,7 @@ async fn main() {
         }
 
         Commands::Import { input, yes } => {
-            if let Err(e) = commands::import::run(input, yes) {
+            if let Err(e) = commands::import::run(&input, yes) {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
@@ -83,7 +95,7 @@ async fn main() {
             output,
             include_config,
         } => {
-            if let Err(e) = commands::export::run(output, include_config) {
+            if let Err(e) = commands::export::run(&output, include_config) {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }

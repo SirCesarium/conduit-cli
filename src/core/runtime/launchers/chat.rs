@@ -82,7 +82,7 @@ impl ChatManager {
 
             self.active.store(true, Ordering::SeqCst);
             if let Ok(mut n) = self.name.lock() {
-                *n = name.clone();
+                n.clone_from(&name);
             }
 
             callbacks.on_event(CoreEvent::ChatModeStarted { sender: name });
@@ -102,12 +102,12 @@ impl ChatManager {
             let name = self.get_name();
 
             let components = vec![
-                RawText::new(&format!("<{}> ", name)).color("gold").bold(true),
+                RawText::new(&format!("<{name}> ")).color("gold").bold(true),
                 RawText::new(input).color("white").bold(false)
             ];
 
             if let Ok(json_data) = serde_json::to_string(&components) {
-                let command = format!("tellraw @a {}", json_data);
+                let command = format!("tellraw @a {json_data}");
                 let _ = tx_server.send(command).await;
             }
 

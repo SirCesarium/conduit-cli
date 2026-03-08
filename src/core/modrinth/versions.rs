@@ -1,6 +1,6 @@
-use crate::core::modrinth::models::Version;
-
 use super::client::ModrinthAPI;
+use crate::core::modrinth::models::Version;
+use std::fmt::Write;
 
 impl ModrinthAPI {
     pub async fn get_versions(
@@ -9,13 +9,13 @@ impl ModrinthAPI {
         loader: Option<&str>,
         game_version: Option<&str>,
     ) -> Result<Vec<Version>, reqwest::Error> {
-        let mut url = format!("{}/project/{}/version?", self.base_url, id_or_slug);
+        let mut url = format!("{}/project/{id_or_slug}/version?", self.base_url);
 
         if let Some(l) = loader {
-            url.push_str(&format!("loaders=[\"{}\"]&", l));
+            let _ = write!(url, "loaders=[\"{l}\"]&");
         }
         if let Some(gv) = game_version {
-            url.push_str(&format!("game_versions=[\"{}\"]&", gv));
+            let _ = write!(url, "game_versions=[\"{gv}\"]&");
         }
 
         self.client

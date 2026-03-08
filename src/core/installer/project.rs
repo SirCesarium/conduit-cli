@@ -118,10 +118,10 @@ pub async fn sync_project(
     for slug in mods_to_check {
         if !lock.locked_mods.contains_key(&slug) {
             let input = if let Some(version) = config.mods.get(&slug) {
-                if version != "latest" {
-                    format!("{}@{}", slug, version)
-                } else {
+                if version == "latest" {
                     slug.clone()
+                } else {
+                    format!("{slug}@{version}")
                 }
             } else {
                 slug.clone()
@@ -201,10 +201,10 @@ async fn rebuild_lock_from_config(
             continue;
         }
 
-        let input = if version != "latest" {
-            format!("{}@{}", slug, version)
-        } else {
+        let input = if version == "latest" {
             slug.clone()
+        } else {
+            format!("{slug}@{version}")
         };
 
         install_mod(

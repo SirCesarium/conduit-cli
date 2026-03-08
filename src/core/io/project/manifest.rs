@@ -33,12 +33,12 @@ pub struct ConduitConfig {
 impl ConduitConfig {
     pub fn from_json(content: &str) -> CoreResult<Self> {
         serde_json::from_str(content)
-            .map_err(|e| CoreError::RuntimeError(format!("Failed to parse conduit.json: {}", e)))
+            .map_err(|e| CoreError::RuntimeError(format!("Failed to parse conduit.json: {e}")))
     }
 
     pub fn to_json(&self) -> CoreResult<String> {
         serde_json::to_string_pretty(self)
-            .map_err(|e| CoreError::RuntimeError(format!("Failed to serialize manifest: {}", e)))
+            .map_err(|e| CoreError::RuntimeError(format!("Failed to serialize manifest: {e}")))
     }
 }
 

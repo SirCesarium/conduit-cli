@@ -3,10 +3,9 @@ use crate::core::io::project::ProjectFiles;
 use crate::core::io::project::lock::{LockedMod, ModSide};
 use crate::core::mods::inspector::JarInspector;
 use crate::core::paths::CorePaths;
-use sha2::{Digest, Sha256};
+use crate::core::io::hash::{sha256_file};
 use std::collections::BTreeSet;
 use std::fs;
-use std::io::Read;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
@@ -128,20 +127,6 @@ fn normalize_path(project_dir: &Path, p: &Path) -> PathBuf {
     } else {
         project_dir.join(p)
     }
-}
-
-fn sha256_file(path: &Path) -> CoreResult<String> {
-    let mut file = fs::File::open(path)?;
-    let mut hasher = Sha256::new();
-    let mut buf = [0u8; 8192];
-    loop {
-        let n = file.read(&mut buf)?;
-        if n == 0 {
-            break;
-        }
-        hasher.update(&buf[..n]);
-    }
-    Ok(format!("{:x}", hasher.finalize()))
 }
 
 fn local_key(filename: &str, mod_id: Option<&str>) -> String {

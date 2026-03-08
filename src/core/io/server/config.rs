@@ -26,6 +26,7 @@ pub enum Difficulty {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct ServerSettings {
     pub name: String,
     pub level_type: String,
@@ -132,7 +133,7 @@ impl ServerConfig {
         let content = std::fs::read_to_string(path)
             .map_err(|_| CoreError::RuntimeError("Could not find config.toml".into()))?;
         let config: ServerConfig = toml::from_str(&content)
-            .map_err(|e| CoreError::RuntimeError(format!("Error in config.toml: {}", e)))?;
+            .map_err(|e| CoreError::RuntimeError(format!("Error in config.toml: {e}")))?;
         Ok(config)
     }
 
@@ -206,7 +207,7 @@ impl ServerConfig {
             let key = parts[0].trim();
 
             if let Some(new_value) = updates.get(key) {
-                new_lines.push(format!("{}={}", key, new_value));
+                new_lines.push(format!("{key}={new_value}"));
                 applied_keys.insert(key.to_string());
             } else {
                 new_lines.push(line.to_string());
@@ -215,7 +216,7 @@ impl ServerConfig {
 
         for (key, value) in updates {
             if !applied_keys.contains(key) {
-                new_lines.push(format!("{}={}", key, value));
+                new_lines.push(format!("{key}={value}"));
             }
         }
 
@@ -231,7 +232,7 @@ impl Default for ServerConfig {
             server: ServerSettings {
                 name: "world".into(),
                 level_type: "default".into(),
-                seed: "".into(),
+                seed: String::new(),
                 generate_structures: true,
                 allow_nether: true,
                 hardcore: false,
@@ -271,8 +272,8 @@ impl Default for ServerConfig {
                 sleeping_motd: "§c§l⚡ §eStarting server...".into(),
             },
             resource_pack: ResourcePackSettings {
-                url: "".into(),
-                hash: "".into(),
+                url: String::new(),
+                hash: String::new(),
                 required: false,
             },
             performance: PerformanceSettings {
