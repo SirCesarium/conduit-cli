@@ -1,7 +1,7 @@
 use conduit_cli::core::events::{CoreCallbacks, CoreEvent};
 use conduit_cli::core::io::project::ProjectFiles;
+use conduit_cli::core::mods::remover::remove_mod;
 use conduit_cli::core::paths::CorePaths;
-use conduit_cli::core::remover::remove_mod;
 use console::style;
 
 pub async fn run(input: String) -> Result<(), Box<dyn std::error::Error>> {

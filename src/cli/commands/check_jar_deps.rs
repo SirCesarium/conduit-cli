@@ -1,4 +1,4 @@
-use conduit_cli::core::java_inspector::JarInspector;
+use conduit_cli::core::mods::inspector::JarInspector;
 use console::style;
 use std::error::Error;
 
