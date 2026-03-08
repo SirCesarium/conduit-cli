@@ -7,6 +7,7 @@ use std::{collections::BTreeMap, fmt};
 pub enum InstanceType {
     Server,
     Client,
+    Singleplayer
 }
 
 impl fmt::Display for InstanceType {
@@ -14,6 +15,7 @@ impl fmt::Display for InstanceType {
         match self {
             InstanceType::Server => write!(f, "server"),
             InstanceType::Client => write!(f, "client"),
+            InstanceType::Singleplayer => write!(f, "singleplayer"),
         }
     }
 }

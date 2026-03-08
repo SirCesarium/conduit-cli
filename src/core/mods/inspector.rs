@@ -4,6 +4,8 @@ use std::io::Read;
 use std::path::Path;
 use zip::ZipArchive;
 
+use crate::core::io::project::lock::ModSide;
+
 #[derive(Debug, Deserialize)]
 pub struct NeoForgeMetadata {
     pub dependencies: Option<std::collections::HashMap<String, Vec<Dependency>>>,
@@ -42,6 +44,18 @@ pub struct JarJarIdentifier {
     pub artifact: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct NeoForgeModMetadata {
+    pub mods: Vec<NeoForgeModInfo>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct NeoForgeModInfo {
+    #[serde(rename = "modId")]
+    pub mod_id: String,
+    pub side: Option<String>,
+}
+
 pub struct JarInspector;
 
 impl JarInspector {
@@ -57,7 +71,7 @@ impl JarInspector {
             toml_file.read_to_string(&mut content)?;
             content
         };
-        
+
         let decoded: NeoForgeMetadata = toml::from_str(&toml_content)?;
 
         let mut embedded_mods = Vec::new();
@@ -66,7 +80,13 @@ impl JarInspector {
             jarjar_file.read_to_string(&mut jarjar_content)?;
             if let Ok(jarjar_data) = serde_json::from_str::<JarJarMetadata>(&jarjar_content) {
                 for entry in jarjar_data.jars {
-                    let clean_id = entry.identifier.artifact.split('-').next().unwrap_or("").to_string();
+                    let clean_id = entry
+                        .identifier
+                        .artifact
+                        .split('-')
+                        .next()
+                        .unwrap_or("")
+                        .to_string();
                     embedded_mods.push(clean_id.to_lowercase());
                     embedded_mods.push(entry.identifier.artifact.to_lowercase());
                 }
@@ -79,11 +99,13 @@ impl JarInspector {
             for (_, deps_list) in all_deps {
                 for dep in deps_list {
                     let dep_id_lower = dep.mod_id.to_lowercase();
-                    
+
                     if dep.r#type == "required"
                         && dep_id_lower != "neoforge"
                         && dep_id_lower != "minecraft"
-                        && !embedded_mods.iter().any(|embedded| dep_id_lower.contains(embedded))
+                        && !embedded_mods
+                            .iter()
+                            .any(|embedded| dep_id_lower.contains(embedded))
                     {
                         required_deps.push(dep.mod_id);
                     }
@@ -103,7 +125,8 @@ impl JarInspector {
         let file = File::open(path)?;
         let mut archive = ZipArchive::new(file)?;
 
-        let toml_content = if let Ok(mut toml_file) = archive.by_name("META-INF/neoforge.mods.toml") {
+        let toml_content = if let Ok(mut toml_file) = archive.by_name("META-INF/neoforge.mods.toml")
+        {
             let mut content = String::new();
             toml_file.read_to_string(&mut content)?;
             content
@@ -123,5 +146,41 @@ impl JarInspector {
             .next()
             .map(|m| m.mod_id);
         Ok(mod_id)
+    }
+
+    pub fn detect_side<P: AsRef<Path>>(path: P) -> ModSide {
+        let Ok(file) = File::open(path) else {
+            return ModSide::Both;
+        };
+        let Ok(mut archive) = ZipArchive::new(file) else {
+            return ModSide::Both;
+        };
+
+        let toml_file = if let Ok(f) = archive.by_name("META-INF/neoforge.mods.toml") {
+            Ok(f)
+        } else {
+            archive.by_name("META-INF/mods.toml")
+        };
+
+        let Ok(mut toml_file) = toml_file else {
+            return ModSide::Both;
+        };
+
+        let mut content = String::new();
+        if toml_file.read_to_string(&mut content).is_err() {
+            return ModSide::Both;
+        }
+
+        if let Ok(decoded) = toml::from_str::<NeoForgeModMetadata>(&content)
+            && let Some(first_mod) = decoded.mods.first()
+                && let Some(s) = &first_mod.side {
+                    return match s.to_lowercase().as_str() {
+                        "client" => ModSide::Client,
+                        "server" => ModSide::Server,
+                        _ => ModSide::Both,
+                    };
+                }
+
+        ModSide::Both
     }
 }

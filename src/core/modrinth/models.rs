@@ -51,4 +51,6 @@ pub struct Project {
     pub project_type: String,
     pub downloads: i32,
     pub icon_url: Option<String>,
+    pub client_side: String,
+    pub server_side: String,
 }

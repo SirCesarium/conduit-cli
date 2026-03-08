@@ -44,7 +44,7 @@ pub fn run(
             .prompt()?,
     );
 
-    let options = vec![InstanceType::Server, InstanceType::Client];
+    let options = vec![InstanceType::Server, InstanceType::Client, InstanceType::Singleplayer];
     params.instance_type = Some(
         inquire::Select::new("Instance type:", options)
             .with_starting_cursor(0)

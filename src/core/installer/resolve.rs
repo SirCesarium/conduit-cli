@@ -122,6 +122,21 @@ async fn install_recursive(
     }
     fs::hard_link(&cached_path, &dest_path)?;
 
+    let jar_side = JarInspector::detect_side(&dest_path);
+
+    let final_side = if jar_side == ModSide::Both {
+        let c = project.client_side.as_str();
+        let s = project.server_side.as_str();
+
+        match (c, s) {
+            ("unsupported", _) | ("optional", "required") => ModSide::Server,
+            (_, "unsupported") | ("required", "optional") => ModSide::Client,
+            _ => ModSide::Both,
+        }
+    } else {
+        jar_side
+    };
+
     if is_root {
         config.mods.insert(
             current_slug.clone(),
@@ -147,7 +162,7 @@ async fn install_recursive(
             url: file.url.clone(),
             hash: sha1,
             dependencies: current_deps.clone(),
-            side: ModSide::Both, // TODO: update crawler to use real mod side here
+            side: final_side,
         },
     );
 
