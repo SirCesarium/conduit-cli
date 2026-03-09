@@ -10,19 +10,22 @@ impl ModrinthAPI {
         offset: i32,
         index: &str,
         facets: Option<String>,
+        project_type: Option<&str>,
     ) -> Result<SearchResult, reqwest::Error> {
-        let mod_filter = "\"project_type:mod\"";
+        let type_filter = project_type.map(|t| format!("\"project_type:{t}\""));
 
-        let final_facets = match facets {
-            Some(f) => {
+        let final_facets = match (facets, type_filter) {
+            (Some(f), Some(tf)) => {
                 if f.starts_with('[') && f.ends_with(']') {
                     let inner = &f[1..f.len() - 1];
-                    format!("[{inner},[{mod_filter}]]")
+                    format!("[{inner},[{tf}]]")
                 } else {
-                    format!("[[{mod_filter}]]")
+                    format!("[[{tf}]]")
                 }
             }
-            None => format!("[[{mod_filter}]]"),
+            (None, Some(tf)) => format!("[[{tf}]]"),
+            (Some(f), None) => f,
+            (None, None) => "[]".to_string(),
         };
 
         let params = vec![
@@ -43,18 +46,5 @@ impl ModrinthAPI {
             .error_for_status()?
             .json::<SearchResult>()
             .await
-    }
-
-    pub async fn get_suggestions(&self, input: &str) -> Vec<(String, String)> {
-        let query = input.split('@').next().unwrap_or(input);
-
-        match self.search(query, 5, 0, "relevance", None).await {
-            Ok(results) => results
-                .hits
-                .into_iter()
-                .map(|hit| (hit.title, hit.slug))
-                .collect(),
-            Err(_) => Vec::new(),
-        }
     }
 }
