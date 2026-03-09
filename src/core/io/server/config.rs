@@ -172,10 +172,7 @@ impl ServerConfig {
         );
 
         updates.insert("level-name", self.server.name.clone());
-        updates.insert(
-            "level-type",
-            format!("minecraft\\:{}", self.server.level_type),
-        );
+        updates.insert("level-type", self.server.level_type.clone());
         updates.insert("level-seed", self.server.seed.clone());
         updates.insert(
             "difficulty",
@@ -192,6 +189,38 @@ impl ServerConfig {
         updates.insert(
             "sync-chunk-writes",
             self.performance.sync_chunk_writes.to_string(),
+        );
+        updates.insert("spawn-monsters", self.spawning.monsters.to_string());
+        updates.insert("spawn-animals", self.spawning.animals.to_string());
+        updates.insert("spawn-npcs", self.spawning.npcs.to_string());
+        updates.insert(
+            "spawn-protection",
+            self.spawning.spawn_protection.to_string(),
+        );
+
+        updates.insert("white-list", self.access.whitelist.to_string());
+        updates.insert("enforce-whitelist", self.access.whitelist.to_string());
+        updates.insert(
+            "op-permission-level",
+            self.access.op_permission_level.to_string(),
+        );
+        updates.insert(
+            "enable-command-block",
+            self.access.enable_command_block.to_string(),
+        );
+
+        updates.insert(
+            "enforce-secure-profile",
+            self.network.enforce_secure_profile.to_string(),
+        );
+        updates.insert(
+            "prevent-proxy-connections",
+            self.network.prevent_proxy_connections.to_string(),
+        );
+
+        updates.insert(
+            "entity-broadcast-range-percentage",
+            self.performance.entity_range.to_string(),
         );
 
         let mut new_lines = Vec::new();
@@ -231,7 +260,7 @@ impl Default for ServerConfig {
         Self {
             server: ServerSettings {
                 name: "world".into(),
-                level_type: "default".into(),
+                level_type: "minecraft:\\:normal".into(),
                 seed: String::new(),
                 generate_structures: true,
                 allow_nether: true,

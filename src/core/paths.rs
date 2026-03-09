@@ -65,16 +65,11 @@ impl CorePaths {
         self.project_dir.join("libraries")
     }
 
-    pub fn neoforge_version_dir(&self, version: &str) -> PathBuf {
-        self.loader_libs_dir()
-            .join("net/neoforged/neoforge")
-            .join(version)
-    }
-
     pub fn get_neoforge_path(&self, version: &str) -> PathBuf {
-        self.project_dir()
-            .join("libraries")
-            .join("net/neoforged/neoforge")
+        self.loader_libs_dir()
+            .join("net")
+            .join("neoforged")
+            .join("neoforge")
             .join(version)
     }
 
@@ -82,8 +77,11 @@ impl CorePaths {
         match loader_type {
             LoaderType::NeoForge => {
                 let path = self.get_neoforge_path(version);
-                println!("{}", path.join("unix_args.txt").display());
                 path.join("unix_args.txt").exists() && path.join("win_args.txt").exists()
+            }
+            LoaderType::Vanilla => {
+                let path = &self.project_dir;
+                path.join("server.jar").exists()
             }
         }
     }

@@ -16,16 +16,6 @@ pub enum ServerLauncher {
 }
 
 impl ServerLauncher {
-    pub fn is_ready(&self, paths: &CorePaths, version: &str) -> bool {
-        match self {
-            Self::Neoforge => {
-                let dir = paths.neoforge_version_dir(version);
-                dir.join("unix_args.txt").exists() && dir.join("win_args.txt").exists()
-            }
-            Self::Vanilla => paths.project_dir().join("server.jar").exists(),
-        }
-    }
-
     pub async fn launch(
         &self,
         paths: &CorePaths,

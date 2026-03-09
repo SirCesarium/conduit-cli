@@ -2,6 +2,7 @@ use crate::core::events::CoreCallbacks;
 use std::path::{Path, PathBuf};
 
 pub mod neoforge;
+pub mod vanilla;
 
 pub struct LoaderInfo {
     pub name: String,
@@ -19,6 +20,7 @@ impl LoaderInfo {
 
 pub enum LoaderType {
     NeoForge,
+    Vanilla,
 }
 
 impl LoaderType {
@@ -29,6 +31,7 @@ impl LoaderType {
     ) -> Result<String, Box<dyn std::error::Error>> {
         match self {
             Self::NeoForge => neoforge::get_latest_neoforge_version(mc_version, callbacks).await,
+            Self::Vanilla => vanilla::get_latest_vanilla_version(callbacks).await,
         }
     }
 
@@ -49,6 +52,9 @@ impl LoaderType {
                 )
                 .await
             }
+            Self::Vanilla => {
+                vanilla::download_vanilla_server(mc_version, install_path, callbacks).await
+            }
         }
     }
 
@@ -59,6 +65,7 @@ impl LoaderType {
     ) -> Result<PathBuf, Box<dyn std::error::Error>> {
         match self {
             Self::NeoForge => neoforge::execute_neoforge_installer(installer_path, callbacks).await,
+            Self::Vanilla => Ok(installer_path.to_path_buf()),
         }
     }
 
@@ -72,6 +79,7 @@ impl LoaderType {
             Self::NeoForge => {
                 neoforge::post_install_neoforge(installer_path, install_path, callbacks)
             }
+            Self::Vanilla => vanilla::post_install_vanilla(install_path, callbacks),
         }
     }
 }

@@ -18,6 +18,7 @@ pub async fn install_loader(
 
     let loader = match loader_info.name.as_str() {
         "neoforge" => LoaderType::NeoForge,
+        "vanilla" => LoaderType::Vanilla,
         _ => return Err(CoreError::UnsupportedLoader(loader_info.name)),
     };
 

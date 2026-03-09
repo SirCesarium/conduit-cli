@@ -4,7 +4,7 @@ use conduit_cli::core::apis::modrinth::ModrinthAPI;
 use conduit_cli::core::{
     io::{project::ProjectFiles, server::config::ServerConfig},
     paths::CorePaths,
-    runtime::{launchers::ServerLauncher, loaders::LoaderInfo},
+    runtime::loaders::{LoaderInfo, LoaderType},
     server::run::start_server,
 };
 use console::style;
@@ -32,7 +32,6 @@ pub async fn run(show_logs: bool, show_gui: bool) -> Result<(), Box<dyn Error>> 
         );
 
         let sides = manifest.instance_type.allowed_sides();
-
         commands::install::run(&api, false, false, true, sides, vec![]).await?;
     }
 
@@ -49,23 +48,26 @@ pub async fn run(show_logs: bool, show_gui: bool) -> Result<(), Box<dyn Error>> 
 
     let loader_raw = lock
         .loader_version
+        .clone()
         .ok_or("Critical: Loader version missing after sync")?;
 
     let loader_info = LoaderInfo::parse(&loader_raw);
     let loader_version = loader_info.version;
 
-    let launcher = if loader_info.name.to_lowercase() == "neoforge" {
-        ServerLauncher::Neoforge
-    } else {
-        eprintln!(
-            "{} Unsupported loader: {}",
-            style("✘").red(),
-            loader_info.name
-        );
-        return Ok(());
+    let loader_type = match loader_info.name.to_lowercase().as_str() {
+        "neoforge" => LoaderType::NeoForge,
+        "vanilla" => LoaderType::Vanilla,
+        _ => {
+            eprintln!(
+                "{} Unsupported loader: {}",
+                style("✘").red(),
+                loader_info.name
+            );
+            return Ok(());
+        }
     };
 
-    if !launcher.is_ready(&paths, &loader_version) {
+    if !paths.is_loader_ready(&loader_type, &loader_version) {
         println!("{} Loader binary missing. Installing...", style("!").blue());
         commands::install_loader::run().await?;
     }
