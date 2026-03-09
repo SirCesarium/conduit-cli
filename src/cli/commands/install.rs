@@ -4,7 +4,7 @@ use conduit_cli::core::installer::extra_deps::ExtraDepsPolicy;
 use conduit_cli::core::installer::project::{InstallProjectOptions, sync_project};
 use conduit_cli::core::io::project::ProjectFiles;
 use conduit_cli::core::io::project::lock::ModSide;
-use conduit_cli::core::modrinth::ModrinthAPI;
+use conduit_cli::core::apis::modrinth::ModrinthAPI;
 use conduit_cli::core::paths::CorePaths;
 use console::style;
 use inquire::Confirm;

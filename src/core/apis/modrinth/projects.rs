@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::core::modrinth::models::Project;
+use crate::core::apis::modrinth::models::Project;
 
 use super::client::ModrinthAPI;
 

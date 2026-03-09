@@ -1,6 +1,6 @@
 use crate::cli::commands;
 use crate::cli::ui::CliUi;
-use conduit_cli::core::modrinth::ModrinthAPI;
+use conduit_cli::core::apis::modrinth::ModrinthAPI;
 use conduit_cli::core::{
     io::{project::ProjectFiles, server::config::ServerConfig},
     paths::CorePaths,

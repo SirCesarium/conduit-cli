@@ -15,7 +15,7 @@ use console::style;
 
 mod cli;
 use cli::{Cli, Commands, VerifyTarget};
-use conduit_cli::core::{io::project::lock::ModSide, modrinth::ModrinthAPI};
+use conduit_cli::core::{io::project::lock::ModSide, apis::modrinth::ModrinthAPI};
 
 use crate::cli::commands;
 

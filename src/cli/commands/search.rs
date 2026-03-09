@@ -1,4 +1,4 @@
-use conduit_cli::core::modrinth::ModrinthAPI;
+use conduit_cli::core::apis::modrinth::ModrinthAPI;
 use comfy_table::presets::UTF8_FULL;
 use comfy_table::{Attribute, Cell, Color, ContentArrangement, Table};
 use console::style;

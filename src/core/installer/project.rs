@@ -4,7 +4,7 @@ use crate::core::installer::resolve::{InstallOptions, install_mod};
 use crate::core::installer::sync::sync_from_lock;
 use crate::core::io::project::lock::{LockedMod, ModSide};
 use crate::core::io::project::{ConduitConfig, ConduitLock, ProjectFiles};
-use crate::core::modrinth::ModrinthAPI;
+use crate::core::apis::modrinth::ModrinthAPI;
 use crate::core::mods::local::add_local_mods_to_project;
 use crate::core::paths::CorePaths;
 use std::collections::HashSet;

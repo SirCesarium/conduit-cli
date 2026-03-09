@@ -6,7 +6,7 @@ use crate::core::installer::extra_deps::{
 };
 use crate::core::io::project::lock::{LockedMod, ModSide};
 use crate::core::io::project::{ConduitConfig, ConduitLock};
-use crate::core::modrinth::ModrinthAPI;
+use crate::core::apis::modrinth::ModrinthAPI;
 use crate::core::mods::inspector::JarInspector;
 use crate::core::paths::CorePaths;
 use async_recursion::async_recursion;

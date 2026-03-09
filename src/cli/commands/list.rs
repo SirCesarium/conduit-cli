@@ -1,5 +1,5 @@
 use conduit_cli::core::io::project::ProjectFiles;
-use conduit_cli::core::modrinth::ModrinthAPI;
+use conduit_cli::core::apis::modrinth::ModrinthAPI;
 use conduit_cli::core::paths::CorePaths;
 use conduit_cli::core::project::lister::{ListReport, build_list_report};
 use console::style;

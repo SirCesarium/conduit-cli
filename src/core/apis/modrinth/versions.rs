@@ -1,5 +1,5 @@
 use super::client::ModrinthAPI;
-use crate::core::modrinth::models::Version;
+use crate::core::apis::modrinth::models::Version;
 use std::fmt::Write;
 
 impl ModrinthAPI {

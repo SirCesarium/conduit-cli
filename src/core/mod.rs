@@ -3,7 +3,7 @@ pub mod events;
 pub mod installer;
 pub mod io;
 pub mod project;
-pub mod modrinth;
+pub mod apis;
 pub mod mods;
 pub mod runtime;
 pub mod paths;
