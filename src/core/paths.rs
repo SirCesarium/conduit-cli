@@ -1,6 +1,5 @@
 use crate::core::{
     error::{CoreError, CoreResult},
-    // runtime::loaders::LoaderType,
 };
 use std::path::{Path, PathBuf};
 
@@ -64,25 +63,4 @@ impl CorePaths {
     pub fn loader_libs_dir(&self) -> PathBuf {
         self.project_dir.join("libraries")
     }
-
-    pub fn get_neoforge_path(&self, version: &str) -> PathBuf {
-        self.loader_libs_dir()
-            .join("net")
-            .join("neoforged")
-            .join("neoforge")
-            .join(version)
-    }
-
-    // pub fn is_loader_ready(&self, loader_type: &LoaderType, version: &str) -> bool {
-    //     match loader_type {
-    //         LoaderType::NeoForge => {
-    //             let path = self.get_neoforge_path(version);
-    //             path.join("unix_args.txt").exists() && path.join("win_args.txt").exists()
-    //         }
-    //         LoaderType::Vanilla => {
-    //             let path = &self.project_dir;
-    //             path.join("server.jar").exists()
-    //         }
-    //     }
-    // }
 }

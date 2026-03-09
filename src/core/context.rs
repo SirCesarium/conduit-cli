@@ -1,12 +1,10 @@
 use std::path::PathBuf;
-use std::sync::Arc;
 
 use crate::core::apis::ConduitApis;
 use crate::core::error::CoreResult;
 use crate::core::io::project::{ConduitConfig, ConduitLock, ProjectFiles};
 use crate::core::io::server::config::ServerConfig;
 use crate::core::paths::CorePaths;
-use crate::core::ui::ConduitUI;
 
 pub struct ConduitContext {
     pub paths: CorePaths,
@@ -14,11 +12,10 @@ pub struct ConduitContext {
     pub manifest: ConduitConfig,
     pub lock: ConduitLock,
     pub config: ServerConfig,
-    pub ui: Arc<dyn ConduitUI>,
 }
 
 impl ConduitContext {
-    pub fn load(project_dir: impl Into<PathBuf>, ui: Arc<dyn ConduitUI>) -> CoreResult<Self> {
+    pub fn load(project_dir: impl Into<PathBuf>) -> CoreResult<Self> {
         let paths = CorePaths::from_project_dir(project_dir)?;
 
         let manifest = ProjectFiles::load_manifest(&paths)?;
@@ -32,7 +29,6 @@ impl ConduitContext {
             manifest,
             lock,
             config,
-            ui
         })
     }
 

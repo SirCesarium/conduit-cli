@@ -1,20 +1,16 @@
-use crate::cli::ui::CliUi;
 use conduit_cli::core::context::ConduitContext;
 use conduit_cli::core::manager::ProjectManager;
 use conduit_cli::core::manager::add::models::{
     AddRequest, ModSide, RemoteSource, ResourceSource, ResourceType,
 };
-use conduit_cli::core::ui::ConduitUI;
 use console::style;
-use std::sync::Arc;
 
 pub async fn run(
     inputs: Vec<String>,
     _deps: Vec<String>,
     explicit_side: Option<ModSide>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let ui: Arc<dyn ConduitUI> = Arc::new(CliUi::new());
-    let ctx = ConduitContext::load(".", ui)?;
+    let ctx = ConduitContext::load(".")?;
     let mut manager = ProjectManager::new(ctx);
 
     for input in inputs {

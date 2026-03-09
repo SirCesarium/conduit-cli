@@ -14,7 +14,7 @@ use clap::Parser;
 use console::style;
 
 mod cli;
-use cli::{Cli, Commands, VerifyTarget};
+use cli::{Cli, Commands};
 use conduit_cli::core::manager::add::models::ModSide as MS;
 
 use crate::cli::commands;
@@ -25,7 +25,6 @@ async fn main() {
 
     match cli.command {
         Commands::Add { inputs, deps, side } => {
-            // Convertimos manualmente el enum de la CLI al enum del Core
             let core_side = side.map(|s| match s {
                 cli::CliModSide::Server => MS::Server,
                 cli::CliModSide::Client => MS::Client,
@@ -38,35 +37,6 @@ async fn main() {
         }
         Commands::Init { name, loader, yes } => {
             if let Err(e) = commands::init::run(name, loader, yes) {
-                eprintln!("{} {}", style("Error:").red().bold(), e);
-            }
-        }
-        Commands::CheckJarDeps { input } => {
-            if let Err(e) = commands::check_jar_deps::run(&input) {
-                eprintln!("{} {}", style("Error:").red().bold(), e);
-            }
-        }
-        Commands::Verify { target } => {
-            let target = target.unwrap_or(VerifyTarget::Modrinth);
-            if let Err(e) = commands::verify::run(&target) {
-                eprintln!("{} {}", style("Error:").red().bold(), e);
-            }
-        }
-        Commands::Remove { input } => {
-            if let Err(e) = commands::remove::run(&input) {
-                eprintln!("{} {}", style("Error:").red().bold(), e);
-            }
-        }
-        Commands::Import { input, yes } => {
-            if let Err(e) = commands::import::run(&input, yes) {
-                eprintln!("{} {}", style("Error:").red().bold(), e);
-            }
-        }
-        Commands::Export {
-            output,
-            include_config,
-        } => {
-            if let Err(e) = commands::export::run(&output, include_config) {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }

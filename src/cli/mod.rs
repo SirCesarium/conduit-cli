@@ -28,8 +28,6 @@ impl From<CliModSide> for CoreModSide {
 }
 
 pub mod commands;
-pub mod progress;
-pub mod ui;
 
 fn get_styles() -> Styles {
     Styles::styled()
@@ -61,66 +59,26 @@ pub enum VerifyTarget {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// ➕ Add a new mod to the project using a Modrinth slug or local file path
-    #[command(
-        alias = "a",
-        long_about = "Adds a mod to your project. Supports Modrinth slugs or paths.\n\nExample:\n  conduit add mod-slug\n  conduit add f:./local-mod.jar"
-    )]
+    #[command(alias = "a")]
     Add {
         #[arg(required = true, num_args = 1..)]
         inputs: Vec<String>,
 
-        #[arg(long, num_args = 1.., help = "List of dependencies to add")]
+        #[arg(long, num_args = 1..)]
         deps: Vec<String>,
 
         #[arg(short = 's', long, value_enum)]
         side: Option<CliModSide>,
     },
 
-    /// ✨ Initialize a new conduit project in the current directory
     Init {
-        #[arg(short, long, help = "Name of the project")]
+        #[arg(short, long)]
         name: Option<String>,
 
-        #[arg(short, long, help = "Loader to use for the project")]
+        #[arg(short, long)]
         loader: Option<String>,
 
-        #[arg(short, long, help = "Use default settings without prompts")]
+        #[arg(short, long)]
         yes: bool,
-    },
-
-    /// 🕷️  Crawl a JAR file to identify its dependencies
-    #[command(alias = "crawl")]
-    CheckJarDeps { input: String },
-
-    /// 🛠️  Verify the integrity of installed mods
-    Verify {
-        #[command(subcommand)]
-        target: Option<VerifyTarget>,
-    },
-
-    /// 🗑️  Remove a mod from the project
-    Remove { input: String },
-
-    /// 📥 Import a modpack from a .conduit file
-    Import {
-        #[arg(help = "Path to the modpack .conduit file")]
-        input: String,
-
-        #[arg(short = 'y', long, help = "Skip security confirmation prompts")]
-        yes: bool,
-    },
-
-    /// 📦 Export your project as a shareable modpack
-    Export {
-        #[arg(help = "Output path for the .conduit file (e.g. my-pack.conduit)")]
-        output: String,
-
-        #[arg(
-            short = 'c',
-            long = "include-config",
-            help = "Include the /config folder in the export"
-        )]
-        include_config: bool,
     },
 }
