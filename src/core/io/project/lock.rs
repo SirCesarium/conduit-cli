@@ -2,7 +2,7 @@ use crate::core::error::{CoreError, CoreResult};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum ModSide {
     Server,

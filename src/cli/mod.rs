@@ -1,3 +1,4 @@
+use clap::ValueEnum;
 use clap::{
     Parser, Subcommand,
     builder::{
@@ -5,10 +6,30 @@ use clap::{
         styling::{AnsiColor, Effects},
     },
 };
+use conduit_cli::core::io::project::lock::ModSide as CoreModSide;
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, ValueEnum, Clone, Debug)]
+#[serde(rename_all = "lowercase")]
+pub enum CliModSide {
+    Server,
+    Client,
+    Both,
+}
+
+impl From<CliModSide> for CoreModSide {
+    fn from(side: CliModSide) -> Self {
+        match side {
+            CliModSide::Server => CoreModSide::Server,
+            CliModSide::Client => CoreModSide::Client,
+            CliModSide::Both => CoreModSide::Both,
+        }
+    }
+}
 
 pub mod commands;
-pub mod ui;
 pub mod progress;
+pub mod ui;
 
 fn get_styles() -> Styles {
     Styles::styled()
@@ -79,6 +100,9 @@ pub enum Commands {
 
         #[arg(long, num_args = 1.., help = "List of dependencies to add")]
         deps: Vec<String>,
+
+        #[arg(short = 's', long, value_enum)]
+        side: Option<CliModSide>,
     },
 
     /// ✨ Initialize a new conduit project in the current directory
@@ -107,6 +131,12 @@ pub enum Commands {
 
         #[arg(short = 'y', long, help = "Skip confirmation prompts")]
         yes: bool,
+
+        #[arg(short = 's', long, value_enum, num_args = 1..)]
+        side: Vec<CliModSide>,
+
+        #[arg(short = 'f', long, num_args = 1..)]
+        files: Vec<String>,
     },
 
     /// 🛠️  Verify the integrity of installed mods

@@ -17,6 +17,7 @@ pub enum CoreError {
     ClientOnlyFeature,
     RuntimeError(String),
     Zip(zip::result::ZipError),
+    MissingLocalFiles { mods: Vec<(String, String)> },
 }
 
 impl fmt::Display for CoreError {
@@ -39,10 +40,22 @@ impl fmt::Display for CoreError {
             CoreError::UnsupportedLoader(loader) => {
                 write!(f, "Unsupported loader: {loader}")
             }
-            CoreError::ServerOnlyFeature => write!(f, "This feature is only available for server instances"),
-            CoreError::ClientOnlyFeature => write!(f, "This feature is only available for client instances"),
+            CoreError::ServerOnlyFeature => {
+                write!(f, "This feature is only available for server instances")
+            }
+            CoreError::ClientOnlyFeature => {
+                write!(f, "This feature is only available for client instances")
+            }
             CoreError::RuntimeError(e) => write!(f, "Runtime error: {e}"),
             CoreError::Zip(e) => write!(f, "Zip error: {e}"),
+            CoreError::MissingLocalFiles { mods } => {
+                let list = mods
+                    .iter()
+                    .map(|(slug, file)| format!("{slug} ({file})"))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                write!(f, "Missing local mod files: {list}")
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 use conduit_cli::core::installer::extra_deps::ExtraDepsPolicy;
 use conduit_cli::core::installer::project::{InstallProjectOptions, add_mods_to_project};
+use conduit_cli::core::io::project::lock::ModSide;
 use conduit_cli::core::modrinth::ModrinthAPI;
 use conduit_cli::core::paths::CorePaths;
 use console::style;
@@ -10,6 +11,7 @@ pub async fn run(
     api: &ModrinthAPI,
     inputs: Vec<String>,
     deps: Vec<String>,
+    explicit_side: Option<ModSide>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if !deps.is_empty() && inputs.len() > 1 {
         return Err("The --deps flag can only be used when adding a single mod.".into());
@@ -28,6 +30,7 @@ pub async fn run(
             extra_deps_policy: ExtraDepsPolicy::Callback,
             ..Default::default()
         },
+        explicit_side
     )
     .await;
 

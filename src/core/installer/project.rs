@@ -15,6 +15,7 @@ pub struct InstallProjectOptions {
     pub extra_deps_policy: ExtraDepsPolicy,
     pub strict: bool,
     pub force: bool,
+    pub allowed_sides: Vec<ModSide>,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -28,6 +29,7 @@ impl Default for InstallProjectOptions {
             extra_deps_policy: ExtraDepsPolicy::Skip,
             strict: false,
             force: false,
+            allowed_sides: vec![ModSide::Both, ModSide::Client, ModSide::Server],
         }
     }
 }
@@ -39,8 +41,10 @@ pub async fn add_mods_to_project(
     explicit_deps: Vec<String>,
     ui: &mut dyn InstallerUi,
     options: InstallProjectOptions,
+    explicit_side: Option<ModSide>,
 ) -> CoreResult<()> {
     let mut local_paths = Vec::new();
+    let mut local_deps = Vec::new();
     let mut root_modrinth = Vec::new();
     let mut dep_modrinth = Vec::new();
 
@@ -57,14 +61,14 @@ pub async fn add_mods_to_project(
 
     for dep in explicit_deps {
         if let Some(path_str) = dep.strip_prefix("f:").or_else(|| dep.strip_prefix("file:")) {
-            local_paths.push(PathBuf::from(path_str));
+            local_deps.push(PathBuf::from(path_str));
         } else {
             dep_modrinth.push(dep);
         }
     }
 
     if !local_paths.is_empty() {
-        add_local_mods_to_project(paths, local_paths)?;
+        add_local_mods_to_project(paths, local_paths, local_deps, explicit_side.as_ref())?;
     }
 
     if !root_modrinth.is_empty() || !dep_modrinth.is_empty() {
@@ -131,8 +135,28 @@ pub async fn sync_project(
     let mut config = ProjectFiles::load_manifest(paths)?;
     let mut lock = ProjectFiles::load_lock(paths)?;
 
+    let allowed = if options.allowed_sides.is_empty() {
+        config.instance_type.allowed_sides()
+    } else {
+        options.allowed_sides.clone()
+    };
+
     if options.force {
         lock = rebuild_lock_from_config(api, paths, ui, &config, &lock, &options).await?;
+    }
+
+    let missing_locals: Vec<(String, String)> = lock
+        .locked_mods
+        .iter()
+        .filter(|(_, m)| m.url == "local" && allowed.contains(&m.side))
+        .filter(|(_, m)| !paths.mods_dir().join(&m.filename).exists())
+        .map(|(slug, m)| (slug.clone(), m.filename.clone()))
+        .collect();
+
+    if !missing_locals.is_empty() {
+        return Err(CoreError::MissingLocalFiles {
+            mods: missing_locals,
+        });
     }
 
     let mods_to_install: Vec<(String, String)> = config
@@ -164,16 +188,17 @@ pub async fn sync_project(
         .await?;
     }
 
-    sync_from_lock(
-        paths,
-        lock.locked_mods.values().filter(|m| m.url != "local"),
-        ui,
-    )
-    .await?;
+    let mods_to_sync = lock
+        .locked_mods
+        .values()
+        .filter(|m| m.url != "local")
+        .filter(|m| allowed.contains(&m.side));
+
+    sync_from_lock(paths, mods_to_sync, ui).await?;
 
     let mut report = SyncProjectReport::default();
     if options.strict {
-        report.pruned_files = prune_unmanaged_mods(paths, &config, &lock)?;
+        report.pruned_files = prune_unmanaged_mods(paths, &config, &lock, &allowed)?;
     }
 
     ProjectFiles::save_manifest(paths, &config)?;
@@ -207,7 +232,7 @@ async fn rebuild_lock_from_config(
                         url: v.url.clone(),
                         hash: v.hash.clone(),
                         dependencies: v.dependencies.clone(),
-                        side: ModSide::Both, // TODO: update crawler to use real mod side here
+                        side: v.side,
                     },
                 )
             })
@@ -250,11 +275,12 @@ fn prune_unmanaged_mods(
     paths: &CorePaths,
     config: &ConduitConfig,
     lock: &ConduitLock,
+    allowed_sides: &[ModSide],
 ) -> CoreResult<Vec<String>> {
     let mut managed_files: HashSet<String> = HashSet::new();
 
     for (key, m) in &lock.locked_mods {
-        if config.mods.contains_key(key) || m.url != "local" {
+        if (config.mods.contains_key(key) || m.url != "local") && allowed_sides.contains(&m.side) {
             managed_files.insert(m.filename.clone());
         }
     }
@@ -264,16 +290,20 @@ fn prune_unmanaged_mods(
         for entry in read_dir {
             let entry = entry?;
             let path = entry.path();
+
             if path.extension().and_then(|e| e.to_str()) != Some("jar") {
                 continue;
             }
+
             let filename = match path.file_name().and_then(|n| n.to_str()) {
                 Some(f) => f.to_string(),
                 None => continue,
             };
+
             if managed_files.contains(&filename) {
                 continue;
             }
+
             fs::remove_file(&path)?;
             pruned.push(filename);
         }

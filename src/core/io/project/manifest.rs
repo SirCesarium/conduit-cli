@@ -1,4 +1,4 @@
-use crate::core::error::{CoreError, CoreResult};
+use crate::core::{error::{CoreError, CoreResult}, io::project::lock::ModSide};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, fmt};
 
@@ -8,6 +8,16 @@ pub enum InstanceType {
     Server,
     Client,
     Singleplayer
+}
+
+impl InstanceType {
+    pub fn allowed_sides(&self) -> Vec<ModSide> {
+        match self {
+            InstanceType::Client => vec![ModSide::Client, ModSide::Both],
+            InstanceType::Server => vec![ModSide::Server, ModSide::Both],
+            InstanceType::Singleplayer => vec![ModSide::Client, ModSide::Server, ModSide::Both],
+        }
+    }
 }
 
 impl fmt::Display for InstanceType {

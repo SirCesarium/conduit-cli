@@ -1,17 +1,25 @@
 use crate::cli::ui::CliUi;
+use conduit_cli::core::error::CoreError;
 use conduit_cli::core::installer::extra_deps::ExtraDepsPolicy;
 use conduit_cli::core::installer::project::{InstallProjectOptions, sync_project};
-use conduit_cli::core::mods::local::find_missing_local_mods;
-use conduit_cli::core::paths::CorePaths;
+use conduit_cli::core::io::project::ProjectFiles;
+use conduit_cli::core::io::project::lock::ModSide;
 use conduit_cli::core::modrinth::ModrinthAPI;
+use conduit_cli::core::paths::CorePaths;
 use console::style;
 use inquire::Confirm;
+use std::fmt::Write;
+use std::fs;
+use std::path::PathBuf;
 
+#[allow(clippy::too_many_lines)]
 pub async fn run(
     api: &ModrinthAPI,
     strict: bool,
     force: bool,
     yes: bool,
+    sides: Vec<ModSide>,
+    provided_files: Vec<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let paths = CorePaths::from_project_dir(".")?;
 
@@ -52,37 +60,55 @@ pub async fn run(
         }
     }
 
-    let report = find_missing_local_mods(&paths);
-    if let Ok(report) = report
-        && (!report.missing_files.is_empty() || !report.missing_lock_entries.is_empty())
-    {
-        println!(
-            "{} Missing local mods in ./mods. Add them with:",
-            style("✘").red()
-        );
+    if !provided_files.is_empty() {
+        let lock = ProjectFiles::load_lock(&paths)?;
+        fs::create_dir_all(paths.mods_dir())?;
 
-        for filename in report.missing_files {
-            println!(
-                "  {} {}",
-                style("conduit add").yellow().bold(),
-                style(format!("f:./{filename}")).cyan()
-            );
+        for entry in provided_files {
+            if let Some((input_slug, path_str)) = entry.rsplit_once(':') {
+                let locked = lock
+                    .locked_mods
+                    .get(input_slug)
+                    .or_else(|| lock.locked_mods.get(&format!("local:{input_slug}")));
+
+                if let Some(locked) = locked {
+                    let src = PathBuf::from(path_str);
+                    let dest = paths.mods_dir().join(&locked.filename);
+
+                    if src.exists() {
+                        fs::copy(&src, &dest)?;
+                        println!(
+                            "{} Repaired local mod: {}",
+                            style("✔").green(),
+                            style(&locked.filename).cyan()
+                        );
+                    } else {
+                        println!(
+                            "{} File not found at: {}",
+                            style("✘").red(),
+                            style(path_str).dim()
+                        );
+                    }
+                } else {
+                    println!(
+                        "{} Mod '{}' (or 'local:{}') not found in lock",
+                        style("⚠").yellow(),
+                        input_slug,
+                        input_slug
+                    );
+                }
+            } else {
+                println!(
+                    "{} Use format: slug:path (e.g., create:./file.jar)",
+                    style("!").yellow()
+                );
+            }
         }
-
-        for key in report.missing_lock_entries {
-            println!(
-                "  {} {}",
-                style("conduit add").yellow().bold(),
-                style(format!("f:<path-to-jar>  # for local mod '{key}'")).cyan()
-            );
-        }
-
-        return Ok(());
     }
 
     let mut ui = CliUi::new();
 
-    sync_project(
+    let result = sync_project(
         api,
         &paths,
         &mut ui,
@@ -90,19 +116,58 @@ pub async fn run(
             extra_deps_policy: ExtraDepsPolicy::Callback,
             strict,
             force,
+            allowed_sides: sides,
         },
     )
-    .await?
-    .pruned_files
-    .into_iter()
-    .for_each(|f| {
-        println!(
-            "{} Removed unmanaged mod {}",
-            style("✘").red(),
-            style(f).dim()
-        );
-    });
+    .await;
 
-    println!("\n{} Project is up to date!", style("✔").green());
+    match result {
+        Ok(report) => {
+            report.pruned_files.into_iter().for_each(|f| {
+                println!(
+                    "{} Removed unmanaged mod {}",
+                    style("✘").red(),
+                    style(f).dim()
+                );
+            });
+            println!("\n{} Project is up to date!", style("✔").green());
+        }
+        Err(CoreError::MissingLocalFiles { mods }) => {
+            println!(
+                "\n{} {}",
+                style("✘").red().bold(),
+                style("Missing local mods in ./mods:").bold()
+            );
+
+            let mut help_example = String::new();
+
+            for (slug, filename) in &mods {
+                println!(
+                    "  - {} {}",
+                    style(slug).cyan(),
+                    style(format!("({filename})")).dim()
+                );
+
+                let clean_slug = slug.strip_prefix("local:").unwrap_or(slug);
+
+                let _ = write!(help_example, " {clean_slug}:./path/to/{filename}");
+            }
+
+            println!(
+                "\n{}",
+                style("To fix this, provide the files using:").yellow()
+            );
+            println!(
+                "  {}",
+                style(format!("conduit install --files{help_example}"))
+                    .cyan()
+                    .bold()
+            );
+
+            return Err(Box::new(CoreError::MissingLocalFiles { mods }));
+        }
+        Err(e) => return Err(Box::new(e)),
+    }
+
     Ok(())
 }

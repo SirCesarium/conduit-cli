@@ -71,11 +71,11 @@ fn collect_tracked_data(
     if let Some(locked) = lock.locked_mods.get(slug) {
         let mut deps_found = Vec::new();
         for dep_id in &locked.dependencies {
-            if let Some((dep_slug, dep_info)) =
+            if let Some((dep_key, dep_info)) =
                 lock.locked_mods.iter().find(|(_, m)| &m.id == dep_id)
             {
                 tracked.insert(dep_info.filename.clone());
-                deps_found.push((dep_slug.clone(), dep_info.clone()));
+                deps_found.push((dep_key.clone(), dep_info.clone()));
             }
         }
 

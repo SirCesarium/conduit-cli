@@ -15,7 +15,7 @@ use console::style;
 
 mod cli;
 use cli::{Cli, Commands, VerifyTarget};
-use conduit_cli::core::modrinth::ModrinthAPI;
+use conduit_cli::core::{io::project::lock::ModSide, modrinth::ModrinthAPI};
 
 use crate::cli::commands;
 
@@ -36,8 +36,10 @@ async fn main() {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
-        Commands::Add { inputs, deps } => {
-            if let Err(e) = commands::add::run(&api, inputs, deps).await {
+        Commands::Add { inputs, deps, side } => {
+            let core_side = side.map(ModSide::from);
+
+            if let Err(e) = commands::add::run(&api, inputs, deps, core_side).await {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
@@ -51,8 +53,16 @@ async fn main() {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
-        Commands::Install { strict, force, yes } => {
-            if let Err(e) = commands::install::run(&api, strict, force, yes).await {
+        Commands::Install {
+            strict,
+            force,
+            yes,
+            side,
+            files
+        } => {
+            let core_sides: Vec<ModSide> = side.into_iter().map(ModSide::from).collect();
+
+            if let Err(e) = commands::install::run(&api, strict, force, yes, core_sides, files).await {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }

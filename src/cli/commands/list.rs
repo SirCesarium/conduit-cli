@@ -70,7 +70,7 @@ pub fn run(_api: &ModrinthAPI) -> Result<(), Box<dyn std::error::Error>> {
 
 fn print_deps(
     slug: &str,
-    report: &ListReport, // Quitamos el lock
+    report: &ListReport,
     indent: usize,
 ) {
     if let Some(deps) = report.dependency_map.get(slug) {

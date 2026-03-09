@@ -23,12 +23,17 @@ pub async fn run(show_logs: bool, show_gui: bool) -> Result<(), Box<dyn Error>> 
         }
     };
 
+    let manifest = ProjectFiles::load_manifest(&paths)?;
+
     if !paths.lock_path().exists() {
         println!(
             "{} No lockfile found. Synchronizing project...",
             style("!").blue()
         );
-        commands::install::run(&api, false, false, true).await?;
+
+        let sides = manifest.instance_type.allowed_sides();
+
+        commands::install::run(&api, false, false, true, sides, vec![]).await?;
     }
 
     let mut lock = ProjectFiles::load_lock(&paths)?;
@@ -45,7 +50,7 @@ pub async fn run(show_logs: bool, show_gui: bool) -> Result<(), Box<dyn Error>> 
     let loader_raw = lock
         .loader_version
         .ok_or("Critical: Loader version missing after sync")?;
-    
+
     let loader_info = LoaderInfo::parse(&loader_raw);
     let loader_version = loader_info.version;
 
@@ -61,10 +66,7 @@ pub async fn run(show_logs: bool, show_gui: bool) -> Result<(), Box<dyn Error>> 
     };
 
     if !launcher.is_ready(&paths, &loader_version) {
-        println!(
-            "{} Loader binary missing. Installing...",
-            style("!").blue()
-        );
+        println!("{} Loader binary missing. Installing...", style("!").blue());
         commands::install_loader::run().await?;
     }
 
