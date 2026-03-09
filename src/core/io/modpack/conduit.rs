@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::fs::{self, File};
-use std::io::{Write, copy};
+use std::io::{Read, Write, copy};
 use std::path::Path;
 use walkdir::WalkDir;
 use zip::write::SimpleFileOptions;
@@ -17,11 +17,49 @@ use crate::core::paths::CorePaths;
 pub struct ConduitProvider;
 
 impl ConduitProvider {
+    const MAX_DECOMPRESSION_RATIO: u64 = 200;
+    const MAX_TOTAL_SIZE: u64 = 1024 * 1024 * 1024 * 2;
+    const MAX_SINGLE_FILE_SIZE: u64 = 1024 * 1024 * 500;
+
     fn is_dangerous(extension: &str) -> bool {
         let blacklist = [
             "exe", "bat", "sh", "py", "js", "vbs", "msi", "com", "cmd", "scr",
         ];
         blacklist.contains(&extension.to_lowercase().as_str())
+    }
+
+    pub fn validate_zip_entry<R>(
+        file: &zip::read::ZipFile<'_, R>,
+        current_total: u64,
+    ) -> CoreResult<u64>
+    where
+        R: std::io::Read + std::io::Seek,
+    {
+        let name = file.name();
+        let uncompressed_size = file.size();
+        let compressed_size = file.compressed_size();
+
+        if uncompressed_size > Self::MAX_SINGLE_FILE_SIZE {
+            return Err(CoreError::RuntimeError(format!("File too large: {name}")));
+        }
+
+        if compressed_size > 0 {
+            let ratio = uncompressed_size / compressed_size;
+            if ratio > Self::MAX_DECOMPRESSION_RATIO && uncompressed_size > 1024 * 1024 {
+                return Err(CoreError::RuntimeError(format!(
+                    "Abnormal compression ratio: {name}"
+                )));
+            }
+        }
+
+        let new_total = current_total + uncompressed_size;
+        if new_total > Self::MAX_TOTAL_SIZE {
+            return Err(CoreError::RuntimeError(
+                "Pack exceeds total size limit".into(),
+            ));
+        }
+
+        Ok(new_total)
     }
 }
 
@@ -135,6 +173,7 @@ impl ModpackProvider for ConduitProvider {
         let mut suspicious = Vec::new();
         let mut dangerous_count = 0;
         let mut local_jars_count = 0;
+        let mut total_uncompressed_size: u64 = 0;
 
         for i in 0..archive.len() {
             let file = archive
@@ -143,6 +182,9 @@ impl ModpackProvider for ConduitProvider {
             let name = file.name().to_string();
 
             if file.is_file() {
+                total_uncompressed_size =
+                    ConduitProvider::validate_zip_entry(&file, total_uncompressed_size)?;
+
                 files.push(name.clone());
 
                 if let Some(ext) = Path::new(&name).extension().and_then(|e| e.to_str()) {
@@ -189,15 +231,26 @@ impl ModpackProvider for ConduitProvider {
             fs::create_dir_all(target_dir)?;
         }
 
+        let mut total_uncompressed_size: u64 = 0;
+
         for i in 0..archive.len() {
-            let mut file = archive.by_index(i)?;
+            let file = archive.by_index(i)?;
             let raw_name = file.name().to_string();
+
+            total_uncompressed_size =
+                ConduitProvider::validate_zip_entry(&file, total_uncompressed_size)?;
 
             let outpath = if let Some(stripped) = raw_name.strip_prefix("overrides/") {
                 target_dir.join(stripped)
             } else {
                 target_dir.join(&raw_name)
             };
+
+            if !outpath.starts_with(target_dir) {
+                return Err(CoreError::RuntimeError(format!(
+                    "Invalid path in ZIP: {raw_name}"
+                )));
+            }
 
             if file.is_dir() {
                 fs::create_dir_all(&outpath)?;
@@ -206,7 +259,8 @@ impl ModpackProvider for ConduitProvider {
                     fs::create_dir_all(p)?;
                 }
                 let mut outfile = File::create(&outpath)?;
-                copy(&mut file, &mut outfile)?;
+                let mut limiter = file.take(Self::MAX_SINGLE_FILE_SIZE);
+                copy(&mut limiter, &mut outfile)?;
 
                 if Path::new(&raw_name)
                     .extension()
