@@ -37,7 +37,7 @@ pub async fn run(show_logs: bool, show_gui: bool) -> Result<(), Box<dyn Error>> 
 
     let mut lock = ProjectFiles::load_lock(&paths)?;
 
-    if lock.loader_version.is_none() {
+    if lock.loader.is_none() {
         println!(
             "{} Loader not configured. Installing loader...",
             style("!").blue()
@@ -47,7 +47,7 @@ pub async fn run(show_logs: bool, show_gui: bool) -> Result<(), Box<dyn Error>> 
     }
 
     let loader_raw = lock
-        .loader_version
+        .loader
         .clone()
         .ok_or("Critical: Loader version missing after sync")?;
 

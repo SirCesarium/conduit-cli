@@ -1,9 +1,11 @@
 use indicatif::{ProgressBar, ProgressStyle};
 use std::time::Duration;
 
+#[allow(unused)]
 pub struct ConduitProgress;
 
 impl ConduitProgress {
+    #[allow(unused)]
     pub fn download_style(total_size: u64) -> ProgressBar {
         let pb = ProgressBar::new(total_size);
         pb.enable_steady_tick(Duration::from_millis(100));
@@ -28,7 +30,8 @@ impl ConduitProgress {
         );
         pb
     }
-
+    
+    #[allow(unused)]
     pub fn simple_spinner(msg: String) -> ProgressBar {
         let pb = ProgressBar::new_spinner();
         pb.enable_steady_tick(Duration::from_millis(80));

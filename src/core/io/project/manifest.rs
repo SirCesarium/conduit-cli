@@ -1,4 +1,7 @@
-use crate::core::{error::{CoreError, CoreResult}, io::project::lock::ModSide};
+use crate::core::{
+    error::{CoreError, CoreResult},
+    io::project::lock::ModSide,
+};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, fmt};
 
@@ -7,7 +10,7 @@ use std::{collections::BTreeMap, fmt};
 pub enum InstanceType {
     Server,
     Client,
-    Singleplayer
+    Singleplayer,
 }
 
 impl InstanceType {
@@ -42,7 +45,26 @@ pub struct ConduitConfig {
     pub mods: BTreeMap<String, String>,
 }
 
+pub struct LoaderInfo {
+    pub(crate) loader: String,
+    #[allow(unused)]
+    version: Option<String>,
+}
+
 impl ConduitConfig {
+    pub fn get_loader_info(&self) -> LoaderInfo {
+        match self.loader.split_once('@') {
+            Some((loader, version)) => LoaderInfo {
+                loader: loader.to_string(),
+                version: Some(version.to_string()),
+            },
+            None => LoaderInfo {
+                loader: self.loader.clone(),
+                version: None,
+            },
+        }
+    }
+
     pub fn from_json(content: &str) -> CoreResult<Self> {
         serde_json::from_str(content)
             .map_err(|e| CoreError::RuntimeError(format!("Failed to parse conduit.json: {e}")))

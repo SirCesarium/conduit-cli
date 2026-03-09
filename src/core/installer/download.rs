@@ -1,45 +1,53 @@
+use crate::core::context::ConduitContext;
 use crate::core::error::CoreResult;
-use crate::core::events::{CoreCallbacks, DownloadProgress};
-use futures_util::StreamExt;
 use std::fs;
-use std::io::Write;
 use std::path::Path;
 
-pub async fn download_to_path(
+pub async fn download_and_link(
+    ctx: &ConduitContext,
     url: &str,
-    dest_path: &Path,
     filename: &str,
-    callbacks: &mut dyn CoreCallbacks,
+    hash: &str,
 ) -> CoreResult<()> {
-    if let Some(parent) = dest_path.parent() {
-        fs::create_dir_all(parent)?;
+    let cache_dir = ctx.paths.cache_dir();
+    let mods_dir = ctx.paths.mods_dir();
+
+    if !cache_dir.exists() {
+        fs::create_dir_all(cache_dir)?;
+    }
+    if !mods_dir.exists() {
+        fs::create_dir_all(mods_dir)?;
     }
 
-    let response = reqwest::get(url).await?;
-    let total = response.content_length();
+    let cached_path = cache_dir.join(format!("{hash}.jar"));
+    let dest_path = mods_dir.join(filename);
 
-    let mut file = fs::File::create(dest_path)?;
-    let mut stream = response.bytes_stream();
-    let mut downloaded: u64 = 0;
-
-    while let Some(item) = stream.next().await {
-        let chunk = item?;
-        file.write_all(&chunk)?;
-        downloaded += chunk.len() as u64;
-        callbacks.on_download_progress(DownloadProgress {
-            bytes_downloaded: downloaded,
-            total_bytes: total,
-            filename: filename.to_string(),
-        });
+    if !cached_path.exists() {
+        download_to_cache(ctx, url, &cached_path).await?;
     }
 
-    if let Some(t) = total {
-        callbacks.on_download_progress(DownloadProgress {
-            bytes_downloaded: t,
-            total_bytes: Some(t),
-            filename: filename.to_string(),
-        });
+    if dest_path.exists() {
+        fs::remove_file(&dest_path)?;
     }
+
+    fs::hard_link(&cached_path, &dest_path)?;
+
+    Ok(())
+}
+
+async fn download_to_cache(
+    ctx: &ConduitContext,
+    url: &str,
+    dest: &Path,
+) -> CoreResult<()> {
+    let response = ctx.api.client
+        .get(url)
+        .send()
+        .await?
+        .bytes()
+        .await?;
+
+    fs::write(dest, response)?;
 
     Ok(())
 }

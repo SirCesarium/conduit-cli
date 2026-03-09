@@ -5,6 +5,7 @@ use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT};
 use std::sync::Arc;
 
 pub struct ConduitApis {
+    pub client: Arc<reqwest::Client>,
     pub modrinth: modrinth::ModrinthAPI,
     pub mojang: mojang::MojangAPI,
 }
@@ -12,16 +13,20 @@ pub struct ConduitApis {
 impl ConduitApis {
     pub fn new() -> Self {
         let mut headers = HeaderMap::new();
-        headers.insert(USER_AGENT, HeaderValue::from_static("Conduit-CLI (github.com/tu_usuario/conduit)"));
+        headers.insert(
+            USER_AGENT,
+            HeaderValue::from_static("Conduit-CLI (github.com/tu_usuario/conduit)"),
+        );
 
         let client = Arc::new(
             reqwest::Client::builder()
                 .default_headers(headers)
                 .build()
-                .expect("Critical: Failed to create global HTTP client")
+                .expect("Critical: Failed to create global HTTP client"),
         );
 
         Self {
+            client: Arc::clone(&client),
             modrinth: modrinth::ModrinthAPI::new(Arc::clone(&client)),
             mojang: mojang::MojangAPI::new(Arc::clone(&client)),
         }

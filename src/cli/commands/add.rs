@@ -1,58 +1,39 @@
-use conduit_cli::core::installer::extra_deps::ExtraDepsPolicy;
-use conduit_cli::core::installer::project::{InstallProjectOptions, add_mods_to_project};
-use conduit_cli::core::io::project::lock::ModSide;
-use conduit_cli::core::apis::modrinth::ModrinthAPI;
-use conduit_cli::core::paths::CorePaths;
-use console::style;
-
 use crate::cli::ui::CliUi;
+use conduit_cli::core::context::ConduitContext;
+use conduit_cli::core::manager::ProjectManager;
+use conduit_cli::core::manager::add::models::{
+    AddRequest, ModSide, RemoteSource, ResourceSource, ResourceType,
+};
+use conduit_cli::core::ui::ConduitUI;
+use console::style;
+use std::sync::Arc;
 
 pub async fn run(
-    api: &ModrinthAPI,
     inputs: Vec<String>,
-    deps: Vec<String>,
+    _deps: Vec<String>,
     explicit_side: Option<ModSide>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    if !deps.is_empty() && inputs.len() > 1 {
-        return Err("The --deps flag can only be used when adding a single mod.".into());
-    }
+    let ui: Arc<dyn ConduitUI> = Arc::new(CliUi::new());
+    let ctx = ConduitContext::load(".", ui)?;
+    let mut manager = ProjectManager::new(ctx);
 
-    let paths = CorePaths::from_project_dir(".")?;
-    let mut ui = CliUi::new();
+    for input in inputs {
+        let parts: Vec<&str> = input.split('@').collect();
+        let slug = parts[0].to_string();
+        let version = parts.get(1).map(std::string::ToString::to_string);
 
-    let result = add_mods_to_project(
-        api,
-        &paths,
-        inputs,
-        deps,
-        &mut ui,
-        InstallProjectOptions {
-            extra_deps_policy: ExtraDepsPolicy::Callback,
-            ..Default::default()
-        },
-        explicit_side
-    )
-    .await;
+        let request = AddRequest {
+            source: ResourceSource::Remote(RemoteSource::Modrinth { slug, version }),
+            side: explicit_side.clone().unwrap_or(ModSide::Both),
+            r#type: ResourceType::Mod,
+            is_dependency: false,
+        };
 
-    match result {
-        Ok(()) => {
-            println!("{} Project updated successfully.", style("✔").green());
-            Ok(())
+        if let Err(e) = manager.add_resource(request).await {
+            eprintln!("{} Error installing {}: {}", style("✘").red(), input, e);
         }
-        Err(e) => match e {
-            conduit_cli::core::error::CoreError::ProjectNotFound { slug } => {
-                let suggestions = api.get_suggestions(&slug).await;
-
-                println!(
-                    "{} Project not found: {}",
-                    style("✘").red(),
-                    style(&slug).yellow().bold()
-                );
-                ui.print_suggestions(&suggestions);
-
-                Ok(())
-            }
-            _ => Err(Box::new(e)),
-        },
     }
+
+    println!("{} Project updated successfully.", style("✔").green());
+    Ok(())
 }

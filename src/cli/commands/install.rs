@@ -1,7 +1,7 @@
 use crate::cli::ui::CliUi;
 use conduit_cli::core::error::CoreError;
-use conduit_cli::core::installer::extra_deps::ExtraDepsPolicy;
-use conduit_cli::core::installer::project::{InstallProjectOptions, sync_project};
+use conduit_cli::core::installer_old::extra_deps::ExtraDepsPolicy;
+use conduit_cli::core::installer_old::project::{InstallProjectOptions, sync_project};
 use conduit_cli::core::io::project::ProjectFiles;
 use conduit_cli::core::io::project::lock::ModSide;
 use conduit_cli::core::apis::modrinth::ModrinthAPI;

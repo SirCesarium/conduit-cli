@@ -1,7 +1,7 @@
 use crate::core::{
     apis::mojang::MojangAPI,
     events::{CoreCallbacks, CoreEvent},
-    installer::download::download_to_path,
+    installer_old::download::download_to_path,
 };
 use std::path::{Path, PathBuf};
 

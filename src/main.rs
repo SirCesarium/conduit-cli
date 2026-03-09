@@ -15,31 +15,24 @@ use console::style;
 
 mod cli;
 use cli::{Cli, Commands, VerifyTarget};
-use conduit_cli::core::{io::project::lock::ModSide, apis::modrinth::ModrinthAPI};
+use conduit_cli::core::manager::add::models::ModSide as MS;
 
 use crate::cli::commands;
 
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
-    let api = ModrinthAPI::new();
 
     match cli.command {
-        Commands::Search {
-            query,
-            limit,
-            page,
-            sort,
-            facets,
-        } => {
-            if let Err(e) = commands::search::run(&api, query, limit, page, sort, facets).await {
-                eprintln!("{} {}", style("Error:").red().bold(), e);
-            }
-        }
         Commands::Add { inputs, deps, side } => {
-            let core_side = side.map(ModSide::from);
+            // Convertimos manualmente el enum de la CLI al enum del Core
+            let core_side = side.map(|s| match s {
+                cli::CliModSide::Server => MS::Server,
+                cli::CliModSide::Client => MS::Client,
+                cli::CliModSide::Both => MS::Both,
+            });
 
-            if let Err(e) = commands::add::run(&api, inputs, deps, core_side).await {
+            if let Err(e) = commands::add::run(inputs, deps, core_side).await {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
@@ -50,19 +43,6 @@ async fn main() {
         }
         Commands::CheckJarDeps { input } => {
             if let Err(e) = commands::check_jar_deps::run(&input) {
-                eprintln!("{} {}", style("Error:").red().bold(), e);
-            }
-        }
-        Commands::Install {
-            strict,
-            force,
-            yes,
-            side,
-            files
-        } => {
-            let core_sides: Vec<ModSide> = side.into_iter().map(ModSide::from).collect();
-
-            if let Err(e) = commands::install::run(&api, strict, force, yes, core_sides, files).await {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
@@ -77,25 +57,6 @@ async fn main() {
                 eprintln!("{} {}", style("Error:").red().bold(), e);
             }
         }
-        Commands::List => {
-            if let Err(e) = commands::list::run(&api) {
-                eprintln!("{} {}", style("Error:").red().bold(), e);
-            }
-        }
-        Commands::InstallLoader => {
-            if let Err(e) = commands::install_loader::run().await {
-                eprintln!("{} {}", style("Error:").red().bold(), e);
-            }
-        }
-        Commands::Start {
-            show_logs,
-            show_gui,
-        } => {
-            if let Err(e) = commands::start::run(show_logs, show_gui).await {
-                eprintln!("{} {}", style("Error:").red().bold(), e);
-            }
-        }
-
         Commands::Import { input, yes } => {
             if let Err(e) = commands::import::run(&input, yes) {
                 eprintln!("{} {}", style("Error:").red().bold(), e);

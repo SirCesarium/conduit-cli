@@ -1,6 +1,6 @@
 use crate::core::{
     events::{CoreCallbacks, CoreEvent},
-    installer::download::download_to_path,
+    installer_old::download::download_to_path,
 };
 use regex::Regex;
 use std::path::{Path, PathBuf};

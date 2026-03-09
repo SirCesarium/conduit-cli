@@ -16,7 +16,7 @@ pub struct ConduitLock {
     pub conduit_version: String,
     pub locked_mods: HashMap<String, LockedMod>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub loader_version: Option<String>,
+    pub loader: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,6 +31,10 @@ pub struct LockedMod {
 }
 
 impl ConduitLock {
+    pub fn is_mod_installed(&self, slug: &str) -> bool {
+        self.locked_mods.contains_key(slug)
+    }
+
     pub fn from_toml(content: &str) -> CoreResult<Self> {
         toml::from_str(content)
             .map_err(|e| CoreError::RuntimeError(format!("Failed to parse conduit.lock: {e}")))
@@ -67,7 +71,7 @@ impl Default for ConduitLock {
             version: 1,
             conduit_version: env!("CARGO_PKG_VERSION").to_string(),
             locked_mods: HashMap::new(),
-            loader_version: None,
+            loader: None,
         }
     }
 }

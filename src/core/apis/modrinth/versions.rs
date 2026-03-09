@@ -1,6 +1,6 @@
 use super::client::ModrinthAPI;
 use crate::core::apis::modrinth::models::Version;
-use std::fmt::Write;
+use reqwest::Url;
 
 impl ModrinthAPI {
     pub async fn get_versions(
@@ -9,13 +9,17 @@ impl ModrinthAPI {
         loader: Option<&str>,
         game_version: Option<&str>,
     ) -> Result<Vec<Version>, reqwest::Error> {
-        let mut url = format!("{}/project/{id_or_slug}/version?", self.base_url);
+        let url_str = format!("{}/project/{id_or_slug}/version", self.base_url);
+        let mut url = Url::parse(&url_str).expect("Invalid base URL");
 
-        if let Some(l) = loader {
-            let _ = write!(url, "loaders=[\"{l}\"]&");
-        }
-        if let Some(gv) = game_version {
-            let _ = write!(url, "game_versions=[\"{gv}\"]&");
+        {
+            let mut pairs = url.query_pairs_mut();
+            if let Some(l) = loader {
+                pairs.append_pair("loaders", &format!("[\"{l}\"]"));
+            }
+            if let Some(gv) = game_version {
+                pairs.append_pair("game_versions", &format!("[\"{gv}\"]"));
+            }
         }
 
         self.client
