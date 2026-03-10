@@ -41,9 +41,7 @@ impl Default for InstanceSnapshot {
     fn default() -> Self {
         Self {
             minecraft_version: "1.21.11".to_string(),
-            loader: crate::domain::loader::Loader::Vanilla {
-                version: "1.21.11".to_string(),
-            },
+            loader: crate::domain::loader::Loader::Vanilla,
             loader_hash: None,
             hash_kind: None,
         }

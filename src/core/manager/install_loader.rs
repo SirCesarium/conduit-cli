@@ -51,7 +51,10 @@ impl ProjectManager {
         }
 
         let loader_info = &manifest.project.loader;
-        let resolved = self.resolver.resolve_loader(loader_info).await?;
+        let resolved = self
+            .resolver
+            .resolve_loader(loader_info, &manifest.project.minecraft.clone())
+            .await?;
 
         let mut hash_obj = Hash {
             sha1: None,
@@ -90,7 +93,11 @@ impl ProjectManager {
         if is_installer {
             let source = self.ctx.store.object_path(&final_hash, kind);
             tokio::fs::copy(source, &target_path).await?;
-            self.run_installer(&target_path, loader_info)?;
+            self.run_installer(
+                &target_path,
+                loader_info,
+                &manifest.project.minecraft.clone(),
+            )?;
             let _ = tokio::fs::remove_file(target_path).await;
         } else {
             self.ctx
@@ -114,15 +121,20 @@ impl ProjectManager {
         Ok(())
     }
 
-    fn run_installer(&self, path: &std::path::Path, loader: &Loader) -> Result<(), InstallError> {
+    fn run_installer(
+        &self,
+        path: &std::path::Path,
+        loader: &Loader,
+        minecraft_version: &str,
+    ) -> Result<(), InstallError> {
         let mut cmd = Command::new("java");
         cmd.arg("-jar").arg(path);
 
         match loader {
-            Loader::Fabric { version } => {
+            Loader::Fabric => {
                 cmd.arg("server")
                     .arg("-mcversion")
-                    .arg(version)
+                    .arg(minecraft_version)
                     .arg("-downloadMinecraft");
             }
             _ => {

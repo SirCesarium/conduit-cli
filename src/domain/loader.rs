@@ -3,10 +3,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "loader_type", rename_all = "snake_case")]
 pub enum Loader {
-    Vanilla { version: String },
+    Vanilla,
     Neoforge { version: String },
-    Fabric { version: String },
+    Fabric,
     Forge { version: String },
-    Paper { version: String },
-    Purpur { version: String },
+    Paper,
+    Purpur,
 }

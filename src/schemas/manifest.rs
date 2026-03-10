@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Manifest {
     pub project: ProjectInfo,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub addons: Vec<Addon>,
 }
 
@@ -20,9 +22,7 @@ impl Default for ProjectInfo {
         Self {
             name: "new-conduit-project".to_string(),
             minecraft: "1.21.11".to_string(),
-            loader: Loader::Vanilla {
-                version: "1.21.11".to_string(),
-            },
+            loader: Loader::Vanilla,
         }
     }
 }

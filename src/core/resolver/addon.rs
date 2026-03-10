@@ -106,21 +106,13 @@ impl Resolver {
                 "neoforge" => Some(Loader::Neoforge {
                     version: mc_version.to_string(),
                 }),
-                "fabric" => Some(Loader::Fabric {
-                    version: mc_version.to_string(),
-                }),
+                "fabric" => Some(Loader::Fabric),
                 "forge" => Some(Loader::Forge {
                     version: mc_version.to_string(),
                 }),
-                "paper" => Some(Loader::Paper {
-                    version: mc_version.to_string(),
-                }),
-                "purpur" => Some(Loader::Purpur {
-                    version: mc_version.to_string(),
-                }),
-                "minecraft" | "vanilla" => Some(Loader::Vanilla {
-                    version: mc_version.to_string(),
-                }),
+                "paper" => Some(Loader::Paper),
+                "purpur" => Some(Loader::Purpur),
+                "minecraft" | "vanilla" => Some(Loader::Vanilla),
                 _ => None,
             })
             .collect();
