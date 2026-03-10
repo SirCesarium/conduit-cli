@@ -2,6 +2,7 @@ pub mod downloader;
 pub mod io;
 pub mod store;
 pub mod resolver;
+pub mod manager;
 
 use crate::api::ConduitAPI;
 use crate::core::downloader::Downloader;

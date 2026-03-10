@@ -1,6 +1,7 @@
 use crate::domain::addon::Addon;
 use crate::domain::loader::Loader;
 use crate::domain::source::AddonSource;
+use crate::core::store::HashKind;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -16,6 +17,8 @@ pub struct Lockfile {
 pub struct InstanceSnapshot {
     pub minecraft_version: String,
     pub loader: Loader,
+    pub loader_hash: Option<String>,
+    pub hash_kind: Option<HashKind>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -41,6 +44,8 @@ impl Default for InstanceSnapshot {
             loader: crate::domain::loader::Loader::Vanilla {
                 version: "1.21.11".to_string(),
             },
+            loader_hash: None,
+            hash_kind: None,
         }
     }
 }

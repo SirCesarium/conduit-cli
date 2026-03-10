@@ -11,6 +11,7 @@ pub enum SourceType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Hash {
     pub sha1: Option<String>,
+    pub sha256: Option<String>,
     pub sha512: Option<String>,
 }
 

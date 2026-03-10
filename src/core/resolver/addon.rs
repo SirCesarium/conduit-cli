@@ -145,6 +145,7 @@ impl Resolver {
                 },
                 hash: Hash {
                     sha1: Some(file.hashes.sha1.clone()),
+                    sha256: None,
                     sha512: Some(file.hashes.sha512.clone()),
                 },
             },
