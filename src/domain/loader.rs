@@ -5,4 +5,8 @@ use serde::{Deserialize, Serialize};
 pub enum Loader {
     Vanilla { version: String },
     Neoforge { version: String },
+    Fabric { version: String },
+    Forge { version: String },
+    Paper { version: String },
+    Purpur { version: String },
 }
