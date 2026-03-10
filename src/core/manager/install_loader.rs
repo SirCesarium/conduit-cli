@@ -31,53 +31,77 @@ impl ProjectManager {
         manifest: &Manifest,
         lockfile: &Lockfile,
     ) -> Result<(), InstallError> {
+        let current_loader = &lockfile.instance.loader;
+        let current_mc = &lockfile.instance.minecraft_version;
+        let target_loader = &manifest.project.loader;
+        let target_mc = &manifest.project.minecraft;
+
         if lockfile.instance.loader_hash.is_some()
-            && (lockfile.instance.loader != manifest.project.loader
-                || lockfile.instance.minecraft_version != manifest.project.minecraft)
+            && (current_loader != target_loader || current_mc != target_mc)
         {
-            let old_id = ConduitPaths::get_runtime_id(
-                &lockfile.instance.loader,
-                &lockfile.instance.minecraft_version,
-            );
-            let runtime_path = self.project_root.join("runtimes").join(old_id);
+            let old_id = ConduitPaths::get_runtime_id(current_loader, current_mc);
+            let runtime_path = self.project_root.join(".conduit_runtimes").join(old_id);
 
             tokio::fs::create_dir_all(&runtime_path).await?;
 
-            let runtime_manifest = Manifest {
-                project: crate::schemas::manifest::ProjectInfo {
-                    name: manifest.project.name.clone(),
-                    minecraft: lockfile.instance.minecraft_version.clone(),
-                    loader: lockfile.instance.loader.clone(),
-                },
-                addons: manifest.addons.clone(),
-            };
-
-            runtime_manifest
-                .save(runtime_path.join("conduit.toml"))
-                .await
-                .map_err(|e| io::Error::other(e.to_string()))?;
-
-            lockfile
-                .save(runtime_path.join("conduit.lock"))
-                .await
-                .map_err(|e| io::Error::other(e.to_string()))?;
-
             let mut entries = tokio::fs::read_dir(&self.project_root).await?;
             while let Some(entry) = entries.next_entry().await? {
-                let file_name = entry.file_name();
-                let name_str = file_name.to_string_lossy();
-
-                if !ConduitPaths::is_conduit_file(&name_str) {
-                    let dest = runtime_path.join(&file_name);
-                    let _ = tokio::fs::rename(entry.path(), dest).await;
+                let name = entry.file_name();
+                let name_str = name.to_string_lossy();
+                if !ConduitPaths::is_conduit_file(&name_str) && name_str != ".conduit_runtimes" {
+                    let _ = tokio::fs::rename(entry.path(), runtime_path.join(name)).await;
                 }
             }
+            let _ = lockfile.save(runtime_path.join("conduit.lock")).await;
         }
+
+        let new_id = ConduitPaths::get_runtime_id(target_loader, target_mc);
+        let target_runtime_path = self.project_root.join(".conduit_runtimes").join(&new_id);
+
+        if target_runtime_path.exists() {
+            let mut entries = tokio::fs::read_dir(&target_runtime_path).await?;
+            while let Some(entry) = entries.next_entry().await? {
+                let name = entry.file_name();
+                let name_str = name.to_string_lossy();
+                if name_str != "conduit.toml" && name_str != "conduit.lock" {
+                    let _ = tokio::fs::rename(entry.path(), self.project_root.join(name)).await;
+                }
+            }
+            let _ = tokio::fs::remove_dir_all(target_runtime_path).await;
+        }
+
         Ok(())
     }
 
-    async fn post_install(&self) -> Result<(), InstallError> {
+    async fn post_install(&self, loader: &Loader) -> Result<(), InstallError> {
         tokio::fs::write(self.project_root.join("eula.txt"), "eula=true").await?;
+
+        if let Loader::Forge { version } = loader {
+            let mc_version = version.split('-').next().unwrap_or("");
+            let is_old = mc_version
+                .split('.')
+                .nth(1)
+                .and_then(|v| v.parse::<u32>().ok())
+                .is_some_and(|v| v <= 16);
+
+            if is_old {
+                let mut entries = tokio::fs::read_dir(&self.project_root).await?;
+                while let Some(entry) = entries.next_entry().await? {
+                    let name = entry.file_name().to_string_lossy().to_lowercase();
+                    if name.contains("forge")
+                        && std::path::Path::new(&name)
+                            .extension()
+                            .is_some_and(|ext| ext.eq_ignore_ascii_case("jar"))
+                        && !name.contains("installer")
+                    {
+                        let _ =
+                            tokio::fs::rename(entry.path(), self.project_root.join("server.jar"))
+                                .await;
+                        break;
+                    }
+                }
+            }
+        }
 
         let files_to_delete = [
             "installer.jar.log",
@@ -183,7 +207,7 @@ impl ProjectManager {
             hash_kind: Some(kind),
         };
 
-        self.post_install().await?;
+        self.post_install(loader_info).await?;
 
         lockfile
             .save(&lock_path)

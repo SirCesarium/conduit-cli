@@ -1,4 +1,5 @@
 mod install_loader;
+mod start;
 
 use std::{path::PathBuf, sync::Arc};
 
