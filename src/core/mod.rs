@@ -1,9 +1,2 @@
-pub mod error;
-pub mod installer;
 pub mod io;
-pub mod project;
-pub mod apis;
-pub mod paths;
-pub mod manager;
-pub mod context;
-pub mod ui;
+pub mod store;
