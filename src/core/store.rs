@@ -8,11 +8,12 @@ use tokio::io::AsyncReadExt;
 pub enum StoreError {
     #[error("io error: {0}")]
     Io(#[from] std::io::Error),
-
+    
     #[error("integrity check failed: expected {expected}, found {found}")]
     HashMismatch { expected: String, found: String },
 }
 
+#[derive(Clone, Debug)]
 pub struct Store {
     root: PathBuf,
 }

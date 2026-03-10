@@ -31,17 +31,19 @@ impl ForgeClient {
     pub async fn get_latest_version(&self, mc_version: &str) -> Result<String, ApiError> {
         let meta = self.get_metadata().await?;
 
+        let prefix = format!("{mc_version}-");
+
         meta.versioning
             .versions
             .list
             .into_iter()
             .rev()
-            .find(|v| v.starts_with(mc_version))
+            .find(|v| v.starts_with(&prefix))
             .ok_or_else(|| ApiError::NotFound(format!("no forge version found for {mc_version}")))
     }
 
     pub fn build_bin_url(&self, version: &str, classifier: &str) -> String {
         let base = "https://maven.minecraftforge.net/net/minecraftforge/forge";
-        format!("{base}/{0}/forge-{0}-{1}.jar", version, classifier)
+        format!("{base}/{version}/forge-{version}-{classifier}.jar")
     }
 }
