@@ -26,6 +26,74 @@ pub enum InstallError {
 }
 
 impl ProjectManager {
+    async fn pre_install_migration(
+        &self,
+        manifest: &Manifest,
+        lockfile: &Lockfile,
+    ) -> Result<(), InstallError> {
+        if lockfile.instance.loader_hash.is_some()
+            && (lockfile.instance.loader != manifest.project.loader
+                || lockfile.instance.minecraft_version != manifest.project.minecraft)
+        {
+            let old_id = ConduitPaths::get_runtime_id(
+                &lockfile.instance.loader,
+                &lockfile.instance.minecraft_version,
+            );
+            let runtime_path = self.project_root.join("runtimes").join(old_id);
+
+            tokio::fs::create_dir_all(&runtime_path).await?;
+
+            let runtime_manifest = Manifest {
+                project: crate::schemas::manifest::ProjectInfo {
+                    name: manifest.project.name.clone(),
+                    minecraft: lockfile.instance.minecraft_version.clone(),
+                    loader: lockfile.instance.loader.clone(),
+                },
+                addons: manifest.addons.clone(),
+            };
+
+            runtime_manifest
+                .save(runtime_path.join("conduit.toml"))
+                .await
+                .map_err(|e| io::Error::other(e.to_string()))?;
+
+            lockfile
+                .save(runtime_path.join("conduit.lock"))
+                .await
+                .map_err(|e| io::Error::other(e.to_string()))?;
+
+            let mut entries = tokio::fs::read_dir(&self.project_root).await?;
+            while let Some(entry) = entries.next_entry().await? {
+                let file_name = entry.file_name();
+                let name_str = file_name.to_string_lossy();
+
+                if !ConduitPaths::is_conduit_file(&name_str) {
+                    let dest = runtime_path.join(&file_name);
+                    let _ = tokio::fs::rename(entry.path(), dest).await;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    async fn post_install(&self) -> Result<(), InstallError> {
+        tokio::fs::write(self.project_root.join("eula.txt"), "eula=true").await?;
+
+        let files_to_delete = [
+            "installer.jar.log",
+            "run.sh",
+            "run.bat",
+            "user_jvm_args.txt",
+        ];
+        for file in files_to_delete {
+            let path = self.project_root.join(file);
+            if path.exists() {
+                let _ = tokio::fs::remove_file(path).await;
+            }
+        }
+        Ok(())
+    }
+
     pub async fn install_loader(&self) -> Result<(), InstallError> {
         let manifest_path = ConduitPaths::get_manifest_path(&self.project_root);
         let lock_path = ConduitPaths::get_lock_path(&self.project_root);
@@ -35,6 +103,8 @@ impl ProjectManager {
             .map_err(|e| Error::new(io::ErrorKind::NotFound, e.to_string()))?;
 
         let mut lockfile = Lockfile::load(&lock_path).await.unwrap_or_default();
+
+        self.pre_install_migration(&manifest, &lockfile).await?;
 
         if let (Some(h), Some(k)) = (&lockfile.instance.loader_hash, &lockfile.instance.hash_kind)
             && !h.is_empty()
@@ -112,6 +182,8 @@ impl ProjectManager {
             loader_hash: Some(final_hash),
             hash_kind: Some(kind),
         };
+
+        self.post_install().await?;
 
         lockfile
             .save(&lock_path)

@@ -28,10 +28,20 @@ impl ForgeClient {
         Ok(metadata)
     }
 
-    pub async fn get_latest_version(&self, mc_version: &str) -> Result<String, ApiError> {
+    pub async fn get_latest_version(&self, input_version: &str) -> Result<String, ApiError> {
         let meta = self.get_metadata().await?;
 
-        let prefix = format!("{mc_version}-");
+        if meta
+            .versioning
+            .versions
+            .list
+            .iter()
+            .any(|v| v == input_version)
+        {
+            return Ok(input_version.to_string());
+        }
+
+        let prefix = format!("{input_version}-");
 
         meta.versioning
             .versions
@@ -39,9 +49,10 @@ impl ForgeClient {
             .into_iter()
             .rev()
             .find(|v| v.starts_with(&prefix))
-            .ok_or_else(|| ApiError::NotFound(format!("no forge version found for {mc_version}")))
+            .ok_or_else(|| {
+                ApiError::NotFound(format!("no forge version found for {input_version}"))
+            })
     }
-
     pub fn build_bin_url(&self, version: &str, classifier: &str) -> String {
         let base = "https://maven.minecraftforge.net/net/minecraftforge/forge";
         format!("{base}/{version}/forge-{version}-{classifier}.jar")
