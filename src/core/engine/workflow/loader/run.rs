@@ -1,7 +1,7 @@
-use crate::engine::workflow::Workflow;
+use crate::core::engine::workflow::Workflow;
 use crate::core::domain::loader::Loader;
 use crate::errors::{ConduitError, ConduitResult};
-use crate::schemas::lock::Lockfile;
+use crate::core::schemas::lock::Lockfile;
 use std::process::Stdio;
 use tokio::io::{self, AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{ChildStdin, Command};

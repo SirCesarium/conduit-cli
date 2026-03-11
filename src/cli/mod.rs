@@ -1,5 +1,7 @@
 use clap::{Parser, Subcommand};
 
+mod commands;
+
 #[derive(Parser)]
 #[command(name = "conduit")]
 #[command(about = "A lightning-fast Minecraft mod manager", long_about = None)]

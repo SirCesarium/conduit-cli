@@ -1,12 +1,11 @@
 use sha1::Sha1;
 use sha2::{Digest, Sha256, Sha512};
 use std::path::{Path, PathBuf};
-use thiserror::Error;
 use tokio::fs;
 use tokio::io::AsyncReadExt;
 
 use crate::errors::ConduitResult;
-use crate::schemas::lock::HashKind;
+use crate::core::schemas::lock::HashKind;
 
 #[derive(Clone, Debug)]
 pub struct Store {

@@ -5,12 +5,12 @@ pub mod resolver;
 pub mod store;
 pub mod workflow;
 
-use crate::api::ConduitAPI;
-use crate::engine::downloader::Downloader;
-use crate::engine::resolver::Resolver;
-use crate::engine::store::Store;
-use crate::schemas::lock::Lockfile;
-use crate::schemas::manifest::Manifest;
+use crate::core::api::ConduitAPI;
+use crate::core::engine::downloader::Downloader;
+use crate::core::engine::resolver::Resolver;
+use crate::core::engine::store::Store;
+use crate::core::schemas::lock::Lockfile;
+use crate::core::schemas::manifest::Manifest;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 

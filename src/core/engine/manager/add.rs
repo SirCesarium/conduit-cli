@@ -1,6 +1,6 @@
 use crate::{
-    engine::io::TomlFile, engine::manager::ProjectManager, domain::addon::AddonType,
-    errors::ConduitResult, paths::ConduitPaths,
+    core::domain::addon::AddonType, core::engine::io::TomlFile,
+    core::engine::manager::ProjectManager, errors::ConduitResult, paths::ConduitPaths,
 };
 
 impl ProjectManager {

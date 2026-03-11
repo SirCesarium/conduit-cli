@@ -1,8 +1,8 @@
-use crate::engine::resolver::loader::ResolvedLoader;
-use crate::engine::workflow::Workflow;
+use crate::core::engine::resolver::loader::ResolvedLoader;
+use crate::core::engine::workflow::Workflow;
 use crate::core::domain::source::Hash;
 use crate::errors::{ConduitError, ConduitResult};
-use crate::schemas::lock::HashKind;
+use crate::core::schemas::lock::HashKind;
 
 impl Workflow {
     pub async fn download_loader(

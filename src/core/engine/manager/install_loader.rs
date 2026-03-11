@@ -1,8 +1,8 @@
 use crate::{
-    engine::{io::TomlFile, manager::ProjectManager},
+    core::engine::{io::TomlFile, manager::ProjectManager},
+    core::schemas::lock::InstanceSnapshot,
     errors::ConduitResult,
     paths::ConduitPaths,
-    schemas::lock::InstanceSnapshot,
 };
 
 impl ProjectManager {

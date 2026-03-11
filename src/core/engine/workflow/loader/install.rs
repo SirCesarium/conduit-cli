@@ -1,10 +1,10 @@
-use crate::engine::resolver::loader::ResolvedLoader;
-use crate::engine::workflow::Workflow;
+use crate::core::engine::resolver::loader::ResolvedLoader;
+use crate::core::engine::workflow::Workflow;
 use crate::core::domain::loader::Loader;
 use crate::errors::{ConduitError, ConduitResult};
 use crate::paths::ConduitPaths;
-use crate::schemas::lock::{HashKind, Lockfile};
-use crate::schemas::manifest::Manifest;
+use crate::core::schemas::lock::{HashKind, Lockfile};
+use crate::core::schemas::manifest::Manifest;
 use std::io::Error;
 use std::process::Command;
 

@@ -1,8 +1,8 @@
 use crate::{
-    engine::workflow::Workflow,
-    domain::{addon::AddonType, loader::Loader},
+    core::domain::{addon::AddonType, loader::Loader},
+    core::engine::workflow::Workflow,
+    core::schemas::manifest::Manifest,
     errors::{ConduitError, ConduitResult},
-    schemas::manifest::Manifest,
 };
 
 impl Workflow {

@@ -1,9 +1,9 @@
-use crate::engine::io::TomlFile;
-use crate::engine::workflow::Workflow;
+use crate::core::engine::io::TomlFile;
+use crate::core::engine::workflow::Workflow;
 use crate::errors::ConduitResult;
 use crate::paths::ConduitPaths;
-use crate::schemas::lock::{InstanceSnapshot, Lockfile};
-use crate::schemas::manifest::Manifest;
+use crate::core::schemas::lock::{InstanceSnapshot, Lockfile};
+use crate::core::schemas::manifest::Manifest;
 
 impl Workflow {
     pub async fn migration(

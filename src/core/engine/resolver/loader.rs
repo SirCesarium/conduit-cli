@@ -1,4 +1,4 @@
-use crate::engine::resolver::Resolver;
+use crate::core::engine::resolver::Resolver;
 use crate::core::domain::loader::Loader;
 use crate::errors::ConduitResult;
 

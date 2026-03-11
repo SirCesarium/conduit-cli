@@ -3,9 +3,7 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::{
-    engine::io::TomlFile,
-    engine::{resolver::addon::ResolvedAddon, workflow::Workflow},
-    domain::addon::AddonType,
+    core::{domain::{addon::AddonType, source::SourceType}, engine::{io::TomlFile, resolver::addon::ResolvedAddon, workflow::Workflow}},
     errors::ConduitResult,
     paths::ConduitPaths,
 };
@@ -19,7 +17,7 @@ impl Workflow {
         let lockfile = self.ctx.lockfile.read().await;
 
         for (uuid, entry) in &lockfile.entries {
-            if let crate::domain::source::SourceType::Modrinth { id, .. } = &entry.source.r#type {
+            if let SourceType::Modrinth { id, .. } = &entry.source.r#type {
                 id_map.insert(id.clone(), *uuid);
             }
         }

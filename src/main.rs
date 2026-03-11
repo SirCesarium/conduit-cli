@@ -7,7 +7,7 @@ async fn main() {
     let cli = Cli::parse_args();
 
     match cli.command {
-        Commands::Init => { /* ... */ }
+        Commands::Init => {}
         Commands::Install => { /* ... */ }
         Commands::Start => { /* ... */ }
         Commands::Add { target, slugs } => {
@@ -20,6 +20,7 @@ async fn main() {
 
             for slug in slugs {
                 // handle installation
+                println!("adding {slug} {addon_type}");
             }
         }
     }

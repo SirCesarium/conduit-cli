@@ -4,7 +4,7 @@ use tokio::fs;
 
 use crate::{
     errors::ConduitResult,
-    schemas::{lock, manifest},
+    core::schemas::{lock, manifest},
 };
 
 pub trait TomlFile: Serialize + DeserializeOwned {

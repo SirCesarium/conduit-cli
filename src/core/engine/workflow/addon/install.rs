@@ -2,12 +2,12 @@ use std::{collections::HashMap, path::PathBuf};
 
 use uuid::Uuid;
 
-use crate::{
-    engine::{resolver::addon::ResolvedAddon, workflow::Workflow},
+use crate::core::{
     domain::addon::{Addon, AddonType},
-    errors::{ConduitError, ConduitResult},
+    engine::{resolver::addon::ResolvedAddon, workflow::Workflow},
     schemas::lock::LockedAddon,
 };
+use crate::errors::{ConduitError, ConduitResult};
 
 impl Workflow {
     pub async fn install_addon_component(

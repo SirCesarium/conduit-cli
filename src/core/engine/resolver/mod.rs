@@ -1,7 +1,7 @@
 pub mod addon;
 pub mod loader;
 
-use crate::api::ConduitAPI;
+use crate::core::api::ConduitAPI;
 use std::sync::Arc;
 
 pub struct Resolver {
