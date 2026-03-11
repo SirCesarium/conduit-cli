@@ -32,12 +32,12 @@ async fn main() {
 async fn run_app() -> miette::Result<()> {
     let cli = Cli::parse_args();
     let current_dir = env::current_dir().into_diagnostic()?;
-    let store_dir = ConduitPaths::get_store_dir();
+    let paths = ConduitPaths::new(current_dir);
 
-    ConduitPaths::ensure_dirs().into_diagnostic()?;
+    paths.ensure_dirs().into_diagnostic()?;
 
-    let manifest_path = ConduitPaths::get_manifest_path(&current_dir);
-    let lock_path = ConduitPaths::get_lock_path(&current_dir);
+    let manifest_path = paths.manifest();
+    let lock_path = paths.lock();
 
     let manifest = if manifest_path.exists() {
         Manifest::load(&manifest_path).await.into_diagnostic()?
@@ -51,8 +51,8 @@ async fn run_app() -> miette::Result<()> {
         Lockfile::default()
     };
 
-    let ctx = Arc::new(ConduitContext::new(store_dir, manifest, lockfile));
-    let cmds = Cmds::new(ctx, current_dir);
+    let ctx = Arc::new(ConduitContext::new(paths.clone(), manifest, lockfile));
+    let cmds = Cmds::new(ctx, paths.root);
 
     match cli.command {
         Commands::Init(args) => {

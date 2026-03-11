@@ -38,8 +38,8 @@ impl Workflow {
                 let _ = tokio::fs::rename(entry.path(), runtime_path.join(&name)).await;
             }
 
-            let manifest_path = ConduitPaths::get_manifest_path(&self.project_root);
-            let lock_path = ConduitPaths::get_lock_path(&self.project_root);
+            let manifest_path = self.ctx.paths.manifest();
+            let lock_path = self.ctx.paths.lock();
 
             let mut old_instance_manifest =
                 Manifest::load(&manifest_path).await.unwrap_or_default();
@@ -85,8 +85,8 @@ impl Workflow {
                 let _ = tokio::fs::rename(entry.path(), self.project_root.join(&name)).await;
             }
 
-            let manifest_path = ConduitPaths::get_manifest_path(&self.project_root);
-            let lock_path = ConduitPaths::get_lock_path(&self.project_root);
+            let manifest_path = self.ctx.paths.manifest();
+            let lock_path = self.ctx.paths.lock();
 
             let restored_manifest = Manifest::load(&manifest_path).await.unwrap_or_default();
             let restored_lock = Lockfile::load(&lock_path).await.unwrap_or_default();

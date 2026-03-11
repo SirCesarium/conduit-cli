@@ -2,7 +2,6 @@ use crate::{
     core::engine::{io::TomlFile, manager::ProjectManager},
     core::schemas::lock::InstanceSnapshot,
     errors::ConduitResult,
-    paths::ConduitPaths,
 };
 
 impl ProjectManager {
@@ -46,9 +45,7 @@ impl ProjectManager {
             hash_kind: Some(kind),
         };
 
-        active_lock
-            .save(ConduitPaths::get_lock_path(&self.project_root))
-            .await?;
+        active_lock.save(self.ctx.paths.lock()).await?;
 
         let mut ctx_lock = self.ctx.lockfile.write().await;
         *ctx_lock = active_lock;

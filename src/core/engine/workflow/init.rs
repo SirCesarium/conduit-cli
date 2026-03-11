@@ -4,7 +4,6 @@ use crate::{
     core::engine::workflow::Workflow,
     core::schemas::manifest::Manifest,
     errors::{ConduitError, ConduitResult},
-    paths::ConduitPaths,
 };
 
 impl Workflow {
@@ -14,7 +13,7 @@ impl Workflow {
         minecraft: String,
         loader: Loader,
     ) -> ConduitResult<Manifest> {
-        let manifest_path = ConduitPaths::get_manifest_path(&self.project_root);
+        let manifest_path = self.ctx.paths.manifest();
 
         if manifest_path.exists() {
             return Err(ConduitError::AlreadyInitialized(

@@ -4,29 +4,40 @@ use std::path::{Path, PathBuf};
 
 use crate::core::domain::loader::Loader;
 
-pub struct ConduitPaths;
+#[derive(Clone, Debug)]
+pub struct ConduitPaths {
+    pub root: PathBuf,
+    pub store: PathBuf,
+}
 
 impl ConduitPaths {
-    pub fn get_store_dir() -> PathBuf {
-        data_local_dir().map_or_else(|| PathBuf::from(".conduit"), |p| p.join("conduit"))
+    pub fn new<P: AsRef<Path>>(project_root: P) -> Self {
+        let root = project_root.as_ref().to_path_buf();
+        let store =
+            data_local_dir().map_or_else(|| root.join(".conduit_data"), |p| p.join("conduit"));
+
+        Self { root, store }
     }
 
-    pub fn get_manifest_path<P: AsRef<Path>>(project_root: P) -> PathBuf {
-        project_root.as_ref().join("conduit.toml")
+    pub fn manifest(&self) -> PathBuf {
+        self.root.join("conduit.toml")
     }
 
-    pub fn get_lock_path<P: AsRef<Path>>(project_root: P) -> PathBuf {
-        project_root.as_ref().join("conduit.lock")
+    pub fn lock(&self) -> PathBuf {
+        self.root.join("conduit.lock")
     }
 
-    pub fn ensure_dirs() -> std::io::Result<()> {
-        let store = Self::get_store_dir();
-        let objects = store.join("objects");
+    pub fn runtimes_dir(&self) -> PathBuf {
+        self.store.join("runtimes")
+    }
 
-        if !objects.exists() {
-            fs::create_dir_all(&objects)?;
-        }
+    pub fn objects_dir(&self) -> PathBuf {
+        self.store.join("objects")
+    }
 
+    pub fn ensure_dirs(&self) -> std::io::Result<()> {
+        fs::create_dir_all(self.objects_dir())?;
+        fs::create_dir_all(self.runtimes_dir())?;
         Ok(())
     }
 
@@ -45,7 +56,12 @@ impl ConduitPaths {
     pub fn is_conduit_file(name: &str) -> bool {
         matches!(
             name,
-            "conduit.toml" | "conduit.lock" | ".conduit_runtimes" | ".git" | ".conduit" | "eula.txt"
+            "conduit.toml"
+                | "conduit.lock"
+                | ".conduit_runtimes"
+                | ".git"
+                | ".conduit"
+                | "eula.txt"
         )
     }
 }

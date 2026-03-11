@@ -3,9 +3,11 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::{
-    core::{domain::{addon::AddonType, source::SourceType}, engine::{io::TomlFile, resolver::addon::ResolvedAddon, workflow::Workflow}},
+    core::{
+        domain::{addon::AddonType, source::SourceType},
+        engine::{io::TomlFile, resolver::addon::ResolvedAddon, workflow::Workflow},
+    },
     errors::ConduitResult,
-    paths::ConduitPaths,
 };
 
 impl Workflow {
@@ -41,8 +43,6 @@ impl Workflow {
             AddonType::Datapack => manifest.datapacks.insert(slug, version),
         };
 
-        manifest
-            .save(ConduitPaths::get_manifest_path(&self.project_root))
-            .await
+        manifest.save(self.ctx.paths.manifest()).await
     }
 }

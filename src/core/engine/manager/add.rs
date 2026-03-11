@@ -1,6 +1,6 @@
 use crate::{
     core::domain::addon::AddonType, core::engine::io::TomlFile,
-    core::engine::manager::ProjectManager, errors::ConduitResult, paths::ConduitPaths,
+    core::engine::manager::ProjectManager, errors::ConduitResult,
 };
 
 impl ProjectManager {
@@ -37,9 +37,7 @@ impl ProjectManager {
         }
 
         let lockfile = self.ctx.lockfile.read().await;
-        lockfile
-            .save(ConduitPaths::get_lock_path(&self.project_root))
-            .await?;
+        lockfile.save(self.ctx.paths.lock()).await?;
 
         Ok(())
     }

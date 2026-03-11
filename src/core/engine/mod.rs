@@ -11,6 +11,8 @@ use crate::core::engine::resolver::Resolver;
 use crate::core::engine::store::Store;
 use crate::core::schemas::lock::Lockfile;
 use crate::core::schemas::manifest::Manifest;
+use crate::paths::ConduitPaths;
+use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -21,12 +23,13 @@ pub struct ConduitContext {
     pub resolver: Arc<Resolver>,
     pub manifest: RwLock<Manifest>,
     pub lockfile: RwLock<Lockfile>,
+    pub paths: ConduitPaths,
 }
 
 impl ConduitContext {
-    pub fn new(store_root: std::path::PathBuf, manifest: Manifest, lockfile: Lockfile) -> Self {
+    pub fn new(paths: ConduitPaths, manifest: Manifest, lockfile: Lockfile) -> Self {
         let api = Arc::new(ConduitAPI::new());
-        let store = Arc::new(Store::new(store_root));
+        let store = Arc::new(Store::new(paths.clone().store));
         let downloader = Arc::new(Downloader::new(store.clone()));
         let resolver = Arc::new(Resolver::new(api.clone()));
 
@@ -37,6 +40,7 @@ impl ConduitContext {
             resolver,
             manifest: RwLock::new(manifest),
             lockfile: RwLock::new(lockfile),
+            paths,
         }
     }
 }
