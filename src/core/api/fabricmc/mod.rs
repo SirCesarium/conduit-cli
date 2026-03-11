@@ -31,8 +31,7 @@ impl FabricClient {
 
     pub fn build_installer_url(&self, version: &str) -> String {
         format!(
-            "https://maven.fabricmc.net/net/fabricmc/fabric-installer/{0}/fabric-installer-{0}.jar",
-            version
+            "https://maven.fabricmc.net/net/fabricmc/fabric-installer/{version}/fabric-installer-{version}.jar"
         )
     }
 }

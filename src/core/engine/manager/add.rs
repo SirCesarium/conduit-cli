@@ -8,8 +8,7 @@ impl ProjectManager {
         let manifest = self.ctx.manifest.read().await;
 
         self.workflow
-            .validate_compatibility(target_type.clone(), &manifest)
-            .await?;
+            .validate_compatibility(&target_type.clone(), &manifest)?;
 
         let resolved_list = self
             .resolver

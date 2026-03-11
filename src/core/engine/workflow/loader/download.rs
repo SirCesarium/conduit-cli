@@ -1,8 +1,8 @@
+use crate::core::domain::source::Hash;
 use crate::core::engine::resolver::loader::ResolvedLoader;
 use crate::core::engine::workflow::Workflow;
-use crate::core::domain::source::Hash;
-use crate::errors::{ConduitError, ConduitResult};
 use crate::core::schemas::lock::HashKind;
+use crate::errors::ConduitResult;
 
 impl Workflow {
     pub async fn download_loader(
@@ -33,6 +33,5 @@ impl Workflow {
             .downloader
             .download_to_store(&resolved.url, download_hash)
             .await
-            .map_err(ConduitError::from)
     }
 }

@@ -31,7 +31,7 @@ impl Workflow {
             .download_to_store(&resolved.download_url, Some(&resolved.source.hash))
             .await?;
 
-        let rel_path = self.get_addon_relative_path(&resolved);
+        let rel_path = get_addon_relative_path(&resolved);
 
         if let Some(parent) = rel_path.parent() {
             let full_parent = self.project_root.join(parent);
@@ -76,14 +76,14 @@ impl Workflow {
 
         Ok(())
     }
+}
 
-    fn get_addon_relative_path(&self, resolved: &ResolvedAddon) -> PathBuf {
-        match resolved.r#type {
-            AddonType::Mod => PathBuf::from("mods").join(&resolved.file_name),
-            AddonType::Plugin => PathBuf::from("plugins").join(&resolved.file_name),
-            AddonType::Datapack => PathBuf::from("world")
-                .join("datapacks")
-                .join(&resolved.file_name),
-        }
+pub fn get_addon_relative_path(resolved: &ResolvedAddon) -> PathBuf {
+    match resolved.r#type {
+        AddonType::Mod => PathBuf::from("mods").join(&resolved.file_name),
+        AddonType::Plugin => PathBuf::from("plugins").join(&resolved.file_name),
+        AddonType::Datapack => PathBuf::from("world")
+            .join("datapacks")
+            .join(&resolved.file_name),
     }
 }

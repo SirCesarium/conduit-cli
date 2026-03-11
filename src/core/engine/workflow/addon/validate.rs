@@ -6,9 +6,9 @@ use crate::{
 };
 
 impl Workflow {
-    pub async fn validate_compatibility(
+    pub fn validate_compatibility(
         &self,
-        target: AddonType,
+        target: &AddonType,
         manifest: &Manifest,
     ) -> ConduitResult<()> {
         let loader = &manifest.project.loader;
@@ -28,9 +28,9 @@ impl Workflow {
                     .and_then(|v| v.parse::<u32>().ok())
                     .unwrap_or(0);
                 if minor < 13 {
-                    return Err(ConduitError::Deserialize(format!(
-                        "Datapacks require MC 1.13+"
-                    )));
+                    return Err(ConduitError::Deserialize(
+                        "Datapacks require MC 1.13+".to_string(),
+                    ));
                 }
                 Ok(())
             }

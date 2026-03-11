@@ -6,6 +6,7 @@ use crate::core::schemas::manifest::Manifest;
 use crate::errors::{ConduitError, ConduitResult};
 use crate::paths::ConduitPaths;
 use std::io::Error;
+use std::path::Path;
 use std::process::Command;
 
 impl Workflow {
@@ -90,7 +91,9 @@ impl Workflow {
                 while let Some(entry) = entries.next_entry().await? {
                     let name = entry.file_name().to_string_lossy().to_lowercase();
                     if name.contains("forge")
-                        && name.ends_with(".jar")
+                        && Path::new(&name)
+                            .extension()
+                            .is_some_and(|ext| ext.eq_ignore_ascii_case("jar"))
                         && !name.contains("installer")
                     {
                         let _ =
@@ -122,12 +125,11 @@ impl Workflow {
         lock: &Lockfile,
         manifest: &Manifest,
     ) -> ConduitResult<bool> {
-        if lock.instance.loader_hash.is_some() {
-            if lock.instance.loader == manifest.project.loader
-                && lock.instance.minecraft_version == manifest.project.minecraft
-            {
-                return Ok(true);
-            }
+        if lock.instance.loader_hash.is_some()
+            && lock.instance.loader == manifest.project.loader
+            && lock.instance.minecraft_version == manifest.project.minecraft
+        {
+            return Ok(true);
         }
 
         let runtime_id =

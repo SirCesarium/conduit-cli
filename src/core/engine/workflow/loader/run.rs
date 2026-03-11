@@ -1,7 +1,7 @@
-use crate::core::engine::workflow::Workflow;
 use crate::core::domain::loader::Loader;
-use crate::errors::{ConduitError, ConduitResult};
+use crate::core::engine::workflow::Workflow;
 use crate::core::schemas::lock::Lockfile;
+use crate::errors::{ConduitError, ConduitResult};
 use std::process::Stdio;
 use tokio::io::{self, AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{ChildStdin, Command};
@@ -44,7 +44,7 @@ impl Workflow {
                 cmd.arg(format!("@{args_file}"));
             }
             Loader::Forge { version } => {
-                if self.is_modern_forge(version) {
+                if is_modern_forge(version) {
                     let args_file = self.find_args_file(version).await?;
                     cmd.arg(format!("@{args_file}"));
                 } else {
@@ -98,7 +98,6 @@ impl Workflow {
                 if path.is_dir() {
                     stack.push(path);
                 } else if path.file_name().is_some_and(|n| n == target_name) {
-
                     let relative = path
                         .strip_prefix(&self.project_root)
                         .map(|p| p.to_string_lossy().to_string())
@@ -113,17 +112,17 @@ impl Workflow {
         }
         fallback.ok_or(ConduitError::NoEntryPoint)
     }
+}
 
-    fn is_modern_forge(&self, version: &str) -> bool {
-        let parts: Vec<&str> = version.split('-').next().unwrap_or("").split('.').collect();
-        let major = parts
-            .first()
-            .and_then(|v| v.parse::<u32>().ok())
-            .unwrap_or(0);
-        let minor = parts
-            .get(1)
-            .and_then(|v| v.parse::<u32>().ok())
-            .unwrap_or(0);
-        major >= 25 || (major == 1 && minor >= 17)
-    }
+fn is_modern_forge(version: &str) -> bool {
+    let parts: Vec<&str> = version.split('-').next().unwrap_or("").split('.').collect();
+    let major = parts
+        .first()
+        .and_then(|v| v.parse::<u32>().ok())
+        .unwrap_or(0);
+    let minor = parts
+        .get(1)
+        .and_then(|v| v.parse::<u32>().ok())
+        .unwrap_or(0);
+    major >= 25 || (major == 1 && minor >= 17)
 }

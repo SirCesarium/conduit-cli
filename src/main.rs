@@ -1,4 +1,3 @@
-use futures_util::lock;
 use miette::IntoDiagnostic;
 use std::env;
 use std::sync::Arc;

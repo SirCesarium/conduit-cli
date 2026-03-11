@@ -1,3 +1,4 @@
+#![allow(unused)]
 use console::{style, Style};
 use inquire::ui::{Color, RenderConfig, Styled, Attributes};
 use std::fmt::Display;

@@ -38,8 +38,7 @@ impl PaperClient {
 
     pub fn build_download_url(&self, mc_version: &str, build: u32, file_name: &str) -> String {
         format!(
-            "https://api.papermc.io/v2/projects/paper/versions/{0}/builds/{1}/downloads/{2}",
-            mc_version, build, file_name
+            "https://api.papermc.io/v2/projects/paper/versions/{mc_version}/builds/{build}/downloads/{file_name}"
         )
     }
 }
