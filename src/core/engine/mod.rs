@@ -12,7 +12,6 @@ use crate::core::engine::store::Store;
 use crate::core::schemas::lock::Lockfile;
 use crate::core::schemas::manifest::Manifest;
 use crate::paths::ConduitPaths;
-use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 

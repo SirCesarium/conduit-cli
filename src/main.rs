@@ -1,3 +1,4 @@
+use futures_util::lock;
 use miette::IntoDiagnostic;
 use std::env;
 use std::sync::Arc;
@@ -46,7 +47,7 @@ async fn run_app() -> miette::Result<()> {
     };
 
     let lockfile = if lock_path.exists() {
-        Lockfile::load(&manifest_path).await.into_diagnostic()?
+        Lockfile::load(&lock_path).await.into_diagnostic()?
     } else {
         Lockfile::default()
     };
@@ -57,6 +58,9 @@ async fn run_app() -> miette::Result<()> {
     match cli.command {
         Commands::Init(args) => {
             cmds.init(args).await?;
+        }
+        Commands::Install(args) => {
+            cmds.install(args).await?;
         }
         _ => {
             println!("Not implemented");

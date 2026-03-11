@@ -1,9 +1,9 @@
 use crate::core::engine::io::TomlFile;
 use crate::core::engine::workflow::Workflow;
-use crate::errors::ConduitResult;
-use crate::paths::ConduitPaths;
 use crate::core::schemas::lock::{InstanceSnapshot, Lockfile};
 use crate::core::schemas::manifest::Manifest;
+use crate::errors::ConduitResult;
+use crate::paths::ConduitPaths;
 
 impl Workflow {
     pub async fn migration(
@@ -35,14 +35,13 @@ impl Workflow {
                     continue;
                 }
 
-                let _ = tokio::fs::rename(entry.path(), runtime_path.join(&name)).await;
+                tokio::fs::rename(entry.path(), runtime_path.join(&name)).await?;
             }
 
             let manifest_path = self.ctx.paths.manifest();
             let lock_path = self.ctx.paths.lock();
 
-            let mut old_instance_manifest =
-                Manifest::load(&manifest_path).await.unwrap_or_default();
+            let mut old_instance_manifest = Manifest::load(&manifest_path).await?;
             old_instance_manifest.project.loader = current_loader.clone();
             old_instance_manifest.project.minecraft = current_mc.clone();
 
@@ -50,12 +49,13 @@ impl Workflow {
                 .save(runtime_path.join("conduit.toml"))
                 .await?;
 
-            let _ = tokio::fs::copy(&lock_path, runtime_path.join("conduit.lock")).await;
+            tokio::fs::copy(&lock_path, runtime_path.join("conduit.lock")).await?;
 
-            let mut clean_manifest = Manifest::load(&manifest_path).await.unwrap_or_default();
+            let mut clean_manifest = Manifest::load(&manifest_path).await?;
             clean_manifest.plugins.clear();
             clean_manifest.mods.clear();
             clean_manifest.datapacks.clear();
+
             clean_manifest.save(&manifest_path).await?;
 
             let clean_lock = Lockfile {
@@ -79,24 +79,34 @@ impl Workflow {
         let target_runtime_path = self.project_root.join(".conduit_runtimes").join(&new_id);
 
         if target_runtime_path.exists() {
-            let mut entries = tokio::fs::read_dir(&target_runtime_path).await?;
-            while let Some(entry) = entries.next_entry().await? {
-                let name = entry.file_name();
-                let _ = tokio::fs::rename(entry.path(), self.project_root.join(&name)).await;
-            }
-
             let manifest_path = self.ctx.paths.manifest();
             let lock_path = self.ctx.paths.lock();
 
-            let restored_manifest = Manifest::load(&manifest_path).await.unwrap_or_default();
-            let restored_lock = Lockfile::load(&lock_path).await.unwrap_or_default();
+            let restored_manifest =
+                Manifest::load(&target_runtime_path.join("conduit.toml")).await?;
+            let restored_lock = Lockfile::load(&target_runtime_path.join("conduit.lock")).await?;
+
+            let mut entries = tokio::fs::read_dir(&target_runtime_path).await?;
+            while let Some(entry) = entries.next_entry().await? {
+                let name = entry.file_name();
+                let name_str = name.to_string_lossy();
+
+                if ConduitPaths::is_conduit_file(&name_str) {
+                    continue;
+                }
+
+                tokio::fs::rename(entry.path(), self.project_root.join(&name)).await?;
+            }
+
+            restored_manifest.save(&manifest_path).await?;
+            restored_lock.save(&lock_path).await?;
 
             let mut ctx_manifest = self.ctx.manifest.write().await;
             *ctx_manifest = restored_manifest;
 
             active_lock = restored_lock;
 
-            let _ = tokio::fs::remove_dir_all(target_runtime_path).await;
+            tokio::fs::remove_dir_all(target_runtime_path).await?;
         }
 
         Ok(active_lock)

@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
+use strum::Display;
 
 use crate::errors::ConduitError;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Display)]
 #[serde(tag = "loader_type", rename_all = "snake_case")]
 pub enum Loader {
     Vanilla,

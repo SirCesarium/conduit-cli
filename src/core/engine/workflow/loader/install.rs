@@ -1,10 +1,10 @@
+use crate::core::domain::loader::Loader;
 use crate::core::engine::resolver::loader::ResolvedLoader;
 use crate::core::engine::workflow::Workflow;
-use crate::core::domain::loader::Loader;
-use crate::errors::{ConduitError, ConduitResult};
-use crate::paths::ConduitPaths;
 use crate::core::schemas::lock::{HashKind, Lockfile};
 use crate::core::schemas::manifest::Manifest;
+use crate::errors::{ConduitError, ConduitResult};
+use crate::paths::ConduitPaths;
 use std::io::Error;
 use std::process::Command;
 
@@ -61,6 +61,8 @@ impl Workflow {
 
         let status = cmd
             .current_dir(&self.project_root)
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
             .status()
             .map_err(|e| ConduitError::Io(Error::other(e.to_string())))?;
 

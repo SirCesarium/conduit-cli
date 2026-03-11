@@ -3,6 +3,7 @@ use std::{path::PathBuf, sync::Arc};
 use conduit_cli::core::engine::{ConduitContext, manager::ProjectManager};
 
 pub mod init;
+pub mod install;
 
 pub struct Cmds {
     pj_manager: ProjectManager,

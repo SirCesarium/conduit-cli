@@ -10,10 +10,16 @@ use crate::core::domain::addon::Addon;
 use crate::errors::ConduitResult;
 
 pub trait AddonProvider {
-    async fn get_addon(&self, id: &str) -> ConduitResult<Addon>;
-    async fn get_source(&self, id: &str, version: &str) -> ConduitResult<Addon>;
+    fn get_addon(&self, id: &str)
+    -> impl std::future::Future<Output = ConduitResult<Addon>> + Send;
+    fn get_source(
+        &self,
+        id: &str,
+        version: &str,
+    ) -> impl std::future::Future<Output = ConduitResult<Addon>> + Send;
 }
 
+#[derive(Default)]
 pub struct ConduitAPI {
     pub modrinth: modrinth::ModrinthClient,
     pub mojang: mojang::MojangClient,
@@ -26,14 +32,6 @@ pub struct ConduitAPI {
 
 impl ConduitAPI {
     pub fn new() -> Self {
-        Self {
-            modrinth: modrinth::ModrinthClient::default(),
-            mojang: mojang::MojangClient::default(),
-            neoforged: neoforged::NeoForgeClient::default(),
-            fabricmc: fabricmc::FabricClient::default(),
-            papermc: papermc::PaperClient::default(),
-            minecraftforge: minecraftforge::ForgeClient::default(),
-            purpurmc: purpurmc::PurpurClient::default(),
-        }
+        Self::default()
     }
 }
