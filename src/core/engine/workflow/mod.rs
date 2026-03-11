@@ -1,6 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
-use crate::core::ConduitContext;
+use crate::engine::ConduitContext;
 
 mod loader;
 mod addon;

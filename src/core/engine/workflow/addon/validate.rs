@@ -1,5 +1,5 @@
 use crate::{
-    core::workflow::Workflow,
+    engine::workflow::Workflow,
     domain::{addon::AddonType, loader::Loader},
     errors::{ConduitError, ConduitResult},
     schemas::manifest::Manifest,

@@ -2,7 +2,7 @@ use dirs::data_local_dir;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::domain::loader::Loader;
+use crate::core::domain::loader::Loader;
 
 pub struct ConduitPaths;
 

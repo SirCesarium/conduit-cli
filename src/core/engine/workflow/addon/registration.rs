@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::{
-    core::io::TomlFile,
-    core::{resolver::addon::ResolvedAddon, workflow::Workflow},
+    engine::io::TomlFile,
+    engine::{resolver::addon::ResolvedAddon, workflow::Workflow},
     domain::addon::AddonType,
     errors::ConduitResult,
     paths::ConduitPaths,

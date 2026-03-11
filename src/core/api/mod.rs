@@ -6,7 +6,7 @@ pub mod neoforged;
 pub mod papermc;
 pub mod purpurmc;
 
-use crate::domain::addon::Addon;
+use crate::core::domain::addon::Addon;
 use crate::errors::ConduitResult;
 
 pub trait AddonProvider {

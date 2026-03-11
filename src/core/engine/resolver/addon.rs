@@ -1,7 +1,7 @@
-use crate::core::resolver::Resolver;
-use crate::domain::addon::AddonType;
-use crate::domain::loader::Loader;
-use crate::domain::source::{AddonSource, Hash, SourceType};
+use crate::engine::resolver::Resolver;
+use crate::core::domain::addon::AddonType;
+use crate::core::domain::loader::Loader;
+use crate::core::domain::source::{AddonSource, Hash, SourceType};
 use crate::errors::{ConduitError, ConduitResult};
 use std::collections::{HashMap, HashSet};
 

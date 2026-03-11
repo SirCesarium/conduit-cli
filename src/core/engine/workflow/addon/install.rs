@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::PathBuf};
 use uuid::Uuid;
 
 use crate::{
-    core::{resolver::addon::ResolvedAddon, workflow::Workflow},
+    engine::{resolver::addon::ResolvedAddon, workflow::Workflow},
     domain::addon::{Addon, AddonType},
     errors::{ConduitError, ConduitResult},
     schemas::lock::LockedAddon,

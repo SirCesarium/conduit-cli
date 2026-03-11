@@ -1,8 +1,8 @@
 use std::io::{Error, ErrorKind};
 use std::sync::Arc;
 
-use crate::core::store::Store;
-use crate::domain::source::Hash;
+use crate::engine::store::Store;
+use crate::core::domain::source::Hash;
 use crate::errors::ConduitResult;
 use crate::schemas::lock::HashKind;
 use crate::errors::ConduitError;

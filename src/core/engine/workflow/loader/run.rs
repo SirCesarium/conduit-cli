@@ -1,5 +1,5 @@
-use crate::core::workflow::Workflow;
-use crate::domain::loader::Loader;
+use crate::engine::workflow::Workflow;
+use crate::core::domain::loader::Loader;
 use crate::errors::{ConduitError, ConduitResult};
 use crate::schemas::lock::Lockfile;
 use std::process::Stdio;

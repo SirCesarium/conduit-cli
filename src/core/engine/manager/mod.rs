@@ -2,9 +2,9 @@ mod add;
 mod install_loader;
 mod start;
 
-use crate::core::ConduitContext;
-use crate::core::resolver::Resolver;
-use crate::core::workflow::Workflow;
+use crate::engine::ConduitContext;
+use crate::engine::resolver::Resolver;
+use crate::engine::workflow::Workflow;
 use std::{path::PathBuf, sync::Arc};
 
 pub struct ProjectManager {

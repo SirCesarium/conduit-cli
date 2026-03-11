@@ -1,6 +1,6 @@
-use crate::domain::addon::Addon;
-use crate::domain::loader::Loader;
-use crate::domain::source::AddonSource;
+use crate::core::domain::addon::Addon;
+use crate::core::domain::loader::Loader;
+use crate::core::domain::source::AddonSource;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -47,7 +47,7 @@ impl Default for InstanceSnapshot {
     fn default() -> Self {
         Self {
             minecraft_version: "1.21.11".to_string(),
-            loader: crate::domain::loader::Loader::Vanilla,
+            loader: Loader::Vanilla,
             loader_hash: None,
             hash_kind: None,
         }

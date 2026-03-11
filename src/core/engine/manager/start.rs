@@ -1,5 +1,5 @@
 use crate::{
-    core::manager::ProjectManager,
+    engine::manager::ProjectManager,
     errors::{ConduitError, ConduitResult},
 };
 

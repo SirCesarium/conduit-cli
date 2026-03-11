@@ -1,6 +1,6 @@
-use crate::core::resolver::loader::ResolvedLoader;
-use crate::core::workflow::Workflow;
-use crate::domain::loader::Loader;
+use crate::engine::resolver::loader::ResolvedLoader;
+use crate::engine::workflow::Workflow;
+use crate::core::domain::loader::Loader;
 use crate::errors::{ConduitError, ConduitResult};
 use crate::paths::ConduitPaths;
 use crate::schemas::lock::{HashKind, Lockfile};

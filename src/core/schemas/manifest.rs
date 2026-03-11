@@ -1,4 +1,4 @@
-use crate::domain::loader::Loader;
+use crate::core::domain::loader::Loader;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 

@@ -1,5 +1,5 @@
 use crate::{
-    core::{io::TomlFile, manager::ProjectManager},
+    engine::{io::TomlFile, manager::ProjectManager},
     errors::ConduitResult,
     paths::ConduitPaths,
     schemas::lock::InstanceSnapshot,

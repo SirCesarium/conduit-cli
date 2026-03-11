@@ -1,5 +1,5 @@
-use crate::core::resolver::Resolver;
-use crate::domain::loader::Loader;
+use crate::engine::resolver::Resolver;
+use crate::core::domain::loader::Loader;
 use crate::errors::ConduitResult;
 
 pub struct ResolvedLoader {

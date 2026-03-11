@@ -1,5 +1,5 @@
 use crate::{
-    core::io::TomlFile, core::manager::ProjectManager, domain::addon::AddonType,
+    engine::io::TomlFile, engine::manager::ProjectManager, domain::addon::AddonType,
     errors::ConduitResult, paths::ConduitPaths,
 };
 
