@@ -1,16 +1,22 @@
-use crate::domain::addon::Addon;
 use crate::domain::loader::Loader;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct Manifest {
     pub project: ProjectInfo,
 
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub addons: Vec<Addon>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
+    pub mods: BTreeMap<String, String>,
+
+    #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
+    pub plugins: BTreeMap<String, String>,
+
+    #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
+    pub datapacks: BTreeMap<String, String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProjectInfo {
     pub name: String,
     pub minecraft: String,

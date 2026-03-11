@@ -1,6 +1,7 @@
 pub mod models;
 
-use crate::api::ApiError;
+use crate::errors::{ConduitError, ConduitResult};
+
 use self::models::FabricInstallerEntry;
 use reqwest::Client;
 
@@ -17,7 +18,7 @@ impl Default for FabricClient {
 }
 
 impl FabricClient {
-    pub async fn get_latest_installer(&self) -> Result<String, ApiError> {
+    pub async fn get_latest_installer(&self) -> ConduitResult<String> {
         let url = "https://meta.fabricmc.net/v2/versions/installer";
         let entries: Vec<FabricInstallerEntry> = self.client.get(url).send().await?.json().await?;
 
@@ -25,7 +26,7 @@ impl FabricClient {
             .into_iter()
             .find(|e| e.stable)
             .map(|e| e.version)
-            .ok_or_else(|| ApiError::NotFound("stable fabric installer".to_string()))
+            .ok_or_else(|| ConduitError::NotFound("stable fabric installer".to_string()))
     }
 
     pub fn build_installer_url(&self, version: &str) -> String {

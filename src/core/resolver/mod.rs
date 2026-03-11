@@ -1,15 +1,15 @@
 pub mod addon;
 pub mod loader;
 
-use crate::core::ConduitContext;
+use crate::api::ConduitAPI;
 use std::sync::Arc;
 
 pub struct Resolver {
-    ctx: Arc<ConduitContext>,
+    pub api: Arc<ConduitAPI>,
 }
 
 impl Resolver {
-    pub fn new(ctx: Arc<ConduitContext>) -> Self {
-        Self { ctx }
+    pub fn new(api: Arc<ConduitAPI>) -> Self {
+        Self { api }
     }
 }

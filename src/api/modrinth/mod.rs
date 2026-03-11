@@ -1,7 +1,8 @@
 pub mod models;
 
+use crate::errors::{ConduitError, ConduitResult};
+
 use self::models::{ProjectResponse, VersionResponse};
-use crate::api::ApiError;
 use reqwest::Client;
 
 pub struct ModrinthClient {
@@ -20,24 +21,24 @@ impl Default for ModrinthClient {
 }
 
 impl ModrinthClient {
-    pub async fn get_project(&self, id: &str) -> Result<ProjectResponse, ApiError> {
+    pub async fn get_project(&self, id: &str) -> ConduitResult<ProjectResponse> {
         let url = format!("https://api.modrinth.com/v2/project/{id}");
         let response = self.client.get(url).send().await?;
 
         if response.status() == 404 {
-            return Err(ApiError::NotFound(id.to_string()));
+            return Err(ConduitError::NotFound(id.to_string()));
         }
 
         let project = response.json::<ProjectResponse>().await?;
         Ok(project)
     }
 
-    pub async fn get_version(&self, version_id: &str) -> Result<VersionResponse, ApiError> {
+    pub async fn get_version(&self, version_id: &str) -> ConduitResult<VersionResponse> {
         let url = format!("https://api.modrinth.com/v2/version/{version_id}");
         let response = self.client.get(url).send().await?;
 
         if response.status() == 404 {
-            return Err(ApiError::NotFound(version_id.to_string()));
+            return Err(ConduitError::NotFound(version_id.to_string()));
         }
 
         let version = response.json::<VersionResponse>().await?;
@@ -49,7 +50,7 @@ impl ModrinthClient {
         id_or_slug: &str,
         loaders: &[String],
         game_versions: &[String],
-    ) -> Result<Vec<VersionResponse>, ApiError> {
+    ) -> ConduitResult<Vec<VersionResponse>> {
         let loaders_query = serde_json::to_string(loaders).unwrap();
         let versions_query = serde_json::to_string(game_versions).unwrap();
 
@@ -60,7 +61,7 @@ impl ModrinthClient {
         let response = self.client.get(url).send().await?;
 
         if response.status() == 404 {
-            return Err(ApiError::NotFound(id_or_slug.to_string()));
+            return Err(ConduitError::NotFound(id_or_slug.to_string()));
         }
 
         let versions = response.json::<Vec<VersionResponse>>().await?;

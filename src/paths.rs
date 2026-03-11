@@ -45,7 +45,7 @@ impl ConduitPaths {
     pub fn is_conduit_file(name: &str) -> bool {
         matches!(
             name,
-            "conduit.toml" | "conduit.lock" | "runtimes" | ".git" | ".conduit" | "eula.txt"
+            "conduit.toml" | "conduit.lock" | ".conduit_runtimes" | ".git" | ".conduit" | "eula.txt"
         )
     }
 }

@@ -1,4 +1,3 @@
-use serde::{Deserialize, Serialize};
 use sha1::Sha1;
 use sha2::{Digest, Sha256, Sha512};
 use std::path::{Path, PathBuf};
@@ -6,21 +5,8 @@ use thiserror::Error;
 use tokio::fs;
 use tokio::io::AsyncReadExt;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub enum HashKind {
-    Sha1,
-    Sha256,
-    Sha512,
-}
-
-#[derive(Error, Debug)]
-pub enum StoreError {
-    #[error("io error: {0}")]
-    Io(#[from] std::io::Error),
-
-    #[error("integrity check failed: expected {expected}, found {found}")]
-    HashMismatch { expected: String, found: String },
-}
+use crate::errors::ConduitResult;
+use crate::schemas::lock::HashKind;
 
 #[derive(Clone, Debug)]
 pub struct Store {
@@ -49,7 +35,7 @@ impl Store {
         &self,
         path: P,
         kind: HashKind,
-    ) -> Result<String, StoreError> {
+    ) -> ConduitResult<String> {
         let mut file = fs::File::open(path).await?;
         let mut buffer = [0; 8192];
 
@@ -57,7 +43,9 @@ impl Store {
             HashKind::Sha1 => {
                 let mut hasher = Sha1::new();
                 while let Ok(n) = file.read(&mut buffer).await {
-                    if n == 0 { break; }
+                    if n == 0 {
+                        break;
+                    }
                     hasher.update(&buffer[..n]);
                 }
                 Ok(format!("{:x}", hasher.finalize()))
@@ -65,7 +53,9 @@ impl Store {
             HashKind::Sha256 => {
                 let mut hasher = Sha256::new();
                 while let Ok(n) = file.read(&mut buffer).await {
-                    if n == 0 { break; }
+                    if n == 0 {
+                        break;
+                    }
                     hasher.update(&buffer[..n]);
                 }
                 Ok(format!("{:x}", hasher.finalize()))
@@ -73,7 +63,9 @@ impl Store {
             HashKind::Sha512 => {
                 let mut hasher = Sha512::new();
                 while let Ok(n) = file.read(&mut buffer).await {
-                    if n == 0 { break; }
+                    if n == 0 {
+                        break;
+                    }
                     hasher.update(&buffer[..n]);
                 }
                 Ok(format!("{:x}", hasher.finalize()))
@@ -86,7 +78,7 @@ impl Store {
         source: P,
         hash: &str,
         kind: HashKind,
-    ) -> Result<(), StoreError> {
+    ) -> ConduitResult<()> {
         let target = self.object_path(hash, kind);
 
         if let Some(parent) = target.parent() {
@@ -105,7 +97,7 @@ impl Store {
         hash: &str,
         kind: HashKind,
         target: P,
-    ) -> Result<(), StoreError> {
+    ) -> ConduitResult<()> {
         let source = self.object_path(hash, kind);
 
         if let Some(parent) = target.as_ref().parent() {
@@ -118,5 +110,31 @@ impl Store {
 
         fs::hard_link(source, target).await?;
         Ok(())
+    }
+
+    pub fn get_project_root(&self) -> PathBuf {
+        std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+    }
+
+    pub fn get_mods_path(&self) -> PathBuf {
+        self.get_project_root().join("mods")
+    }
+
+    pub fn get_plugins_path(&self) -> PathBuf {
+        self.get_project_root().join("plugins")
+    }
+
+    pub fn get_world_path(&self) -> PathBuf {
+        self.get_project_root().join("world")
+    }
+
+    pub async fn install_to_project(
+        &self,
+        hash: &str,
+        kind: HashKind,
+        rel_path: PathBuf,
+    ) -> ConduitResult<()> {
+        let target = self.get_project_root().join(rel_path);
+        self.link_object(hash, kind, target).await
     }
 }

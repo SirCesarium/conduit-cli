@@ -1,7 +1,7 @@
 pub mod models;
 
 use self::models::Metadata;
-use crate::api::ApiError;
+use crate::errors::{ConduitError, ConduitResult};
 use quick_xml::de::from_str;
 use reqwest::Client;
 
@@ -18,17 +18,17 @@ impl Default for NeoForgeClient {
 }
 
 impl NeoForgeClient {
-    pub async fn get_metadata(&self) -> Result<Metadata, ApiError> {
+    pub async fn get_metadata(&self) -> ConduitResult<Metadata> {
         let url = "https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml";
         let response = self.client.get(url).send().await?.text().await?;
 
         let metadata: Metadata = from_str(&response)
-            .map_err(|e| ApiError::Deserialize(format!("failed to parse neoforge xml: {e}")))?;
+            .map_err(|e| ConduitError::Deserialize(format!("failed to parse neoforge xml: {e}")))?;
 
         Ok(metadata)
     }
 
-    pub async fn get_latest_version(&self) -> Result<String, ApiError> {
+    pub async fn get_latest_version(&self) -> ConduitResult<String> {
         let meta = self.get_metadata().await?;
         Ok(meta.versioning.release)
     }

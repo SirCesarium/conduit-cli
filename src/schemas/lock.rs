@@ -1,19 +1,25 @@
 use crate::domain::addon::Addon;
 use crate::domain::loader::Loader;
 use crate::domain::source::AddonSource;
-use crate::core::store::HashKind;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum HashKind {
+    Sha1,
+    Sha256,
+    Sha512,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Lockfile {
     pub version: u32,
     pub instance: InstanceSnapshot,
     pub entries: HashMap<Uuid, LockedAddon>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct InstanceSnapshot {
     pub minecraft_version: String,
     pub loader: Loader,
@@ -21,7 +27,7 @@ pub struct InstanceSnapshot {
     pub hash_kind: Option<HashKind>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LockedAddon {
     pub metadata: Addon,
     pub source: AddonSource,

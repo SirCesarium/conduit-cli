@@ -1,36 +1,24 @@
 use std::io::{Error, ErrorKind};
+use std::sync::Arc;
 
-use crate::api::ApiError;
-use crate::core::store::{HashKind, Store};
+use crate::core::store::Store;
 use crate::domain::source::Hash;
+use crate::errors::ConduitResult;
+use crate::schemas::lock::HashKind;
+use crate::errors::ConduitError;
 use futures_util::StreamExt;
 use reqwest::Client;
 use reqwest::redirect::Policy;
-use thiserror::Error;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
 
-#[derive(Error, Debug)]
-pub enum DownloadError {
-    #[error("network error: {0}")]
-    Network(#[from] reqwest::Error),
-    #[error("io error: {0}")]
-    Io(#[from] std::io::Error),
-    #[error("hash mismatch: expected {expected}, got {actual}")]
-    HashMismatch { expected: String, actual: String },
-    #[error("api error: {0}")]
-    Api(#[from] ApiError),
-    #[error("store error: {0}")]
-    Store(#[from] crate::core::store::StoreError),
-}
-
 pub struct Downloader {
     client: Client,
-    store: Store,
+    store: Arc<Store>,
 }
 
 impl Downloader {
-    pub fn new(store: Store) -> Self {
+    pub fn new(store: Arc<Store>) -> Self {
         Self {
             client: Client::builder()
                 .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0")
@@ -40,11 +28,12 @@ impl Downloader {
             store,
         }
     }
+
     pub async fn download_to_store(
         &self,
         url: &str,
         expected_hash: Option<&Hash>,
-    ) -> Result<(String, HashKind), DownloadError> {
+    ) -> ConduitResult<(String, HashKind)> {
         if let Some(hash) = expected_hash {
             let (val, kind) = if let Some(h) = &hash.sha512 {
                 (h, HashKind::Sha512)
@@ -67,7 +56,7 @@ impl Downloader {
         let response = self.client.get(url).send().await?;
 
         if !response.status().is_success() {
-            return Err(DownloadError::Network(
+            return Err(ConduitError::Network(
                 response.error_for_status().unwrap_err(),
             ));
         }
@@ -108,7 +97,7 @@ impl Downloader {
                 && *ev != actual_hash
             {
                 let _ = fs::remove_file(&temp_path).await;
-                return Err(DownloadError::HashMismatch {
+                return Err(ConduitError::HashMismatch {
                     expected: ev.clone(),
                     actual: actual_hash,
                 });
@@ -125,9 +114,9 @@ impl Downloader {
         &self,
         hash: &str,
         kind: HashKind,
-    ) -> Result<(String, HashKind), DownloadError> {
+    ) -> ConduitResult<(String, HashKind)> {
         if hash.is_empty() {
-            return Err(DownloadError::Io(Error::new(
+            return Err(ConduitError::Io(Error::new(
                 ErrorKind::InvalidInput,
                 "empty hash",
             )));
@@ -137,7 +126,7 @@ impl Downloader {
         if path.exists() {
             Ok((hash.to_string(), kind))
         } else {
-            Err(DownloadError::Io(Error::new(
+            Err(ConduitError::Io(Error::new(
                 ErrorKind::NotFound,
                 format!("hash {hash} not found"),
             )))

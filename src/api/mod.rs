@@ -7,24 +7,11 @@ pub mod papermc;
 pub mod purpurmc;
 
 use crate::domain::addon::Addon;
-use crate::domain::source::AddonSource;
-use thiserror::Error;
-
-#[derive(Error, Debug)]
-pub enum ApiError {
-    #[error("network request failed: {0}")]
-    Network(#[from] reqwest::Error),
-
-    #[error("resource not found: {0}")]
-    NotFound(String),
-
-    #[error("failed to deserialize response: {0}")]
-    Deserialize(String),
-}
+use crate::errors::ConduitResult;
 
 pub trait AddonProvider {
-    async fn get_addon(&self, id: &str) -> Result<Addon, ApiError>;
-    async fn get_source(&self, id: &str, version: &str) -> Result<AddonSource, ApiError>;
+    async fn get_addon(&self, id: &str) -> ConduitResult<Addon>;
+    async fn get_source(&self, id: &str, version: &str) -> ConduitResult<Addon>;
 }
 
 pub struct ConduitAPI {

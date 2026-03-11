@@ -1,6 +1,6 @@
-use crate::api::ApiError;
 use crate::core::resolver::Resolver;
 use crate::domain::loader::Loader;
+use crate::errors::ConduitResult;
 
 pub struct ResolvedLoader {
     pub url: String,
@@ -13,10 +13,10 @@ impl Resolver {
         &self,
         loader: &Loader,
         mc_version: &str,
-    ) -> Result<ResolvedLoader, ApiError> {
+    ) -> ConduitResult<ResolvedLoader> {
         match loader {
             Loader::Vanilla => {
-                let url = self.ctx.api.mojang.get_server_url(mc_version).await?;
+                let url = self.api.mojang.get_server_url(mc_version).await?;
                 Ok(ResolvedLoader {
                     url,
                     hash: String::new(),
@@ -24,9 +24,9 @@ impl Resolver {
                 })
             }
             Loader::Paper => {
-                let build = self.ctx.api.papermc.get_latest_build(mc_version).await?;
+                let build = self.api.papermc.get_latest_build(mc_version).await?;
                 Ok(ResolvedLoader {
-                    url: self.ctx.api.papermc.build_download_url(
+                    url: self.api.papermc.build_download_url(
                         mc_version,
                         build.build,
                         &build.downloads.application.name,
@@ -36,17 +36,16 @@ impl Resolver {
                 })
             }
             Loader::Purpur => {
-                let build = self.ctx.api.purpurmc.get_latest_build(mc_version).await?;
+                let build = self.api.purpurmc.get_latest_build(mc_version).await?;
                 Ok(ResolvedLoader {
-                    url: self.ctx.api.purpurmc.build_download_url(mc_version, &build),
+                    url: self.api.purpurmc.build_download_url(mc_version, &build),
                     hash: String::new(),
                     file_name: "server.jar".to_string(),
                 })
             }
             Loader::Fabric => {
-                let installer_version = self.ctx.api.fabricmc.get_latest_installer().await?;
+                let installer_version = self.api.fabricmc.get_latest_installer().await?;
                 let url = self
-                    .ctx
                     .api
                     .fabricmc
                     .build_installer_url(&installer_version);
@@ -58,13 +57,11 @@ impl Resolver {
             }
             Loader::Forge { version } => {
                 let forge_version = self
-                    .ctx
                     .api
                     .minecraftforge
                     .get_latest_version(version)
                     .await?;
                 let url = self
-                    .ctx
                     .api
                     .minecraftforge
                     .build_bin_url(&forge_version, "installer");
@@ -75,7 +72,7 @@ impl Resolver {
                 })
             }
             Loader::Neoforge { version } => {
-                let url = self.ctx.api.neoforged.build_bin_url(version, "installer");
+                let url = self.api.neoforged.build_bin_url(version, "installer");
                 Ok(ResolvedLoader {
                     url,
                     hash: String::new(),

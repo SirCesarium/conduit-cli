@@ -1,24 +1,29 @@
+mod add;
 mod install_loader;
 mod start;
 
-use std::{path::PathBuf, sync::Arc};
-
 use crate::core::ConduitContext;
 use crate::core::resolver::Resolver;
+use crate::core::workflow::Workflow;
+use std::{path::PathBuf, sync::Arc};
 
 pub struct ProjectManager {
-    ctx: Arc<ConduitContext>,
-    resolver: Resolver,
-    project_root: PathBuf,
+    pub ctx: Arc<ConduitContext>,
+    pub resolver: Resolver,
+    pub project_root: PathBuf,
+    pub workflow: Workflow,
 }
 
 impl ProjectManager {
     pub fn new(ctx: Arc<ConduitContext>, project_root: PathBuf) -> Self {
-        let resolver = Resolver::new(ctx.clone());
+        let resolver = Resolver::new(ctx.api.clone());
+        let workflow = Workflow::new(ctx.clone(), project_root.clone());
+
         Self {
             ctx,
             resolver,
             project_root,
+            workflow,
         }
     }
 }

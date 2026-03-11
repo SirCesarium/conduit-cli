@@ -1,7 +1,8 @@
 pub mod models;
 
+use crate::errors::{ConduitError, ConduitResult};
+
 use self::models::{PaperBuild, PaperBuildsResponse};
-use crate::api::ApiError;
 use reqwest::Client;
 
 pub struct PaperClient {
@@ -17,12 +18,14 @@ impl Default for PaperClient {
 }
 
 impl PaperClient {
-    pub async fn get_latest_build(&self, mc_version: &str) -> Result<PaperBuild, ApiError> {
+    pub async fn get_latest_build(&self, mc_version: &str) -> ConduitResult<PaperBuild> {
         let url = format!("https://api.papermc.io/v2/projects/paper/versions/{mc_version}/builds");
         let response = self.client.get(url).send().await?;
 
         if response.status() == 404 {
-            return Err(ApiError::NotFound(format!("Paper version {mc_version}")));
+            return Err(ConduitError::NotFound(format!(
+                "Paper version {mc_version}"
+            )));
         }
 
         let data = response.json::<PaperBuildsResponse>().await?;
@@ -30,7 +33,7 @@ impl PaperClient {
         data.builds
             .into_iter()
             .last()
-            .ok_or_else(|| ApiError::NotFound(format!("No builds found for {mc_version}")))
+            .ok_or_else(|| ConduitError::NotFound(format!("No builds found for {mc_version}")))
     }
 
     pub fn build_download_url(&self, mc_version: &str, build: u32, file_name: &str) -> String {
