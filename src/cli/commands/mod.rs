@@ -6,12 +6,13 @@ pub mod init;
 
 pub struct Cmds {
     pj_manager: ProjectManager,
+    ctx: Arc<ConduitContext>,
 }
 
 impl Cmds {
     pub fn new(ctx: Arc<ConduitContext>, root: PathBuf) -> Self {
-        let pj_manager = ProjectManager::new(ctx, root);
+        let pj_manager = ProjectManager::new(ctx.clone(), root);
 
-        Self { pj_manager }
+        Self { pj_manager, ctx }
     }
 }

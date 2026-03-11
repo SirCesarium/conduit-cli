@@ -34,7 +34,7 @@ pub enum CliLoader {
 
 impl Cmds {
     pub async fn init(&self, args: InitArgs) -> miette::Result<()> {
-        if self.pj_manager.project_root.join("conduit.toml").exists() {
+        if self.ctx.paths.manifest().exists() {
             return Err(CliError::from(ConduitError::AlreadyInitialized(
                 "conduit.toml exists".into(),
             ))
@@ -44,8 +44,9 @@ impl Cmds {
         UI::logo();
 
         let mut project_name = args.name.clone().unwrap_or_else(|| {
-            self.pj_manager
-                .project_root
+            self.ctx
+                .paths
+                .root
                 .file_name()
                 .and_then(|name| name.to_str())
                 .map_or_else(
