@@ -1,6 +1,10 @@
 use clap::{Parser, Subcommand};
 
-mod commands;
+use crate::cli::commands::init::InitArgs;
+
+pub mod commands;
+mod errors;
+mod ui;
 
 #[derive(Parser)]
 #[command(name = "conduit")]
@@ -12,7 +16,7 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    Init,
+    Init(InitArgs),
     Install,
     Start,
     Add {

@@ -44,6 +44,12 @@ pub enum ConduitError {
 
     #[error("resource not found: {0}")]
     NotFound(String),
+
+    #[error("Project already initialized: {0}")]
+    AlreadyInitialized(String),
+
+    #[error("Validation failed: {0}")]
+    Validation(String),
 }
 
 pub type ConduitResult<T> = Result<T, ConduitError>;

@@ -1,1 +1,17 @@
+use std::{path::PathBuf, sync::Arc};
+
+use conduit_cli::core::engine::{ConduitContext, manager::ProjectManager};
+
 pub mod init;
+
+pub struct Cmds {
+    pj_manager: ProjectManager,
+}
+
+impl Cmds {
+    pub fn new(ctx: Arc<ConduitContext>, root: PathBuf) -> Self {
+        let pj_manager = ProjectManager::new(ctx, root);
+
+        Self { pj_manager }
+    }
+}
