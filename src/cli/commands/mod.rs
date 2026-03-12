@@ -5,6 +5,7 @@ use conduit_cli::core::engine::{ConduitContext, manager::ProjectManager};
 pub mod init;
 pub mod install;
 pub mod add;
+pub mod start;
 
 pub struct Cmds {
     pj_manager: ProjectManager,

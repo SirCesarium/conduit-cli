@@ -44,7 +44,7 @@ impl Workflow {
                 cmd.arg(format!("@{args_file}"));
             }
             Loader::Forge { version } => {
-                if is_modern_forge(version) {
+                if Self::is_modern_forge(version) {
                     let args_file = self.find_args_file(version).await?;
                     cmd.arg(format!("@{args_file}"));
                 } else {
@@ -112,17 +112,17 @@ impl Workflow {
         }
         fallback.ok_or(ConduitError::NoEntryPoint)
     }
-}
-
-fn is_modern_forge(version: &str) -> bool {
-    let parts: Vec<&str> = version.split('-').next().unwrap_or("").split('.').collect();
-    let major = parts
-        .first()
-        .and_then(|v| v.parse::<u32>().ok())
-        .unwrap_or(0);
-    let minor = parts
-        .get(1)
-        .and_then(|v| v.parse::<u32>().ok())
-        .unwrap_or(0);
-    major >= 25 || (major == 1 && minor >= 17)
+    
+    pub fn is_modern_forge(version: &str) -> bool {
+        let parts: Vec<&str> = version.split('-').next().unwrap_or("").split('.').collect();
+        let major = parts
+            .first()
+            .and_then(|v| v.parse::<u32>().ok())
+            .unwrap_or(0);
+        let minor = parts
+            .get(1)
+            .and_then(|v| v.parse::<u32>().ok())
+            .unwrap_or(0);
+        major >= 25 || (major == 1 && minor >= 17)
+    }
 }

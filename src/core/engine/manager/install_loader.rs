@@ -85,7 +85,7 @@ fn validate_loader_compatibility(mc_version: &str, loader: &Loader) -> ConduitRe
                 )));
             }
         }
-        _ => {} // Vanilla, Fabric, etc., se validan en el resolver
+        _ => {}
     }
     Ok(())
 }

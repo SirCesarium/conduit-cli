@@ -4,7 +4,6 @@ use crate::core::engine::workflow::Workflow;
 use crate::core::schemas::lock::{HashKind, Lockfile};
 use crate::core::schemas::manifest::Manifest;
 use crate::errors::{ConduitError, ConduitResult};
-use crate::paths::ConduitPaths;
 use std::io::Error;
 use std::path::Path;
 use std::process::Command;
@@ -125,21 +124,31 @@ impl Workflow {
         lock: &Lockfile,
         manifest: &Manifest,
     ) -> ConduitResult<bool> {
-        if lock.instance.loader_hash.is_some()
-            && lock.instance.loader == manifest.project.loader
-            && lock.instance.minecraft_version == manifest.project.minecraft
+        if lock.instance.loader != manifest.project.loader
+            || lock.instance.minecraft_version != manifest.project.minecraft
         {
-            return Ok(true);
+            return Ok(false);
         }
 
-        let runtime_id =
-            ConduitPaths::get_runtime_id(&manifest.project.loader, &manifest.project.minecraft);
-        let runtime_path = self.project_root.join(".conduit_runtimes").join(runtime_id);
-
-        if runtime_path.exists() {
-            return Ok(true);
+        match &lock.instance.loader {
+            Loader::Neoforge { .. } => {
+                let libs = self.project_root.join("libraries");
+                Ok(libs.exists())
+            }
+            Loader::Forge { version } => {
+                if Self::is_modern_forge(version) {
+                    let libs = self.project_root.join("libraries");
+                    Ok(libs.exists())
+                } else {
+                    Ok(self.project_root.join("server.jar").exists())
+                }
+            }
+            Loader::Fabric => {
+                let has_launch_jar = self.project_root.join("fabric-server-launch.jar").exists();
+                let has_server_jar = self.project_root.join("server.jar").exists();
+                Ok(has_launch_jar || has_server_jar)
+            }
+            _ => Ok(self.project_root.join("server.jar").exists()),
         }
-
-        Ok(false)
     }
 }

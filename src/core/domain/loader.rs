@@ -15,6 +15,17 @@ pub enum Loader {
 }
 
 impl Loader {
+    pub fn pretty_name(&self) -> String {
+        match self {
+            Loader::Vanilla => "Vanilla".to_string(),
+            Loader::Fabric => "Fabric".to_string(),
+            Loader::Paper => "Paper".to_string(),
+            Loader::Purpur => "Purpur".to_string(),
+            Loader::Neoforge { version } => format!("NeoForge ({version})"),
+            Loader::Forge { version } => format!("Forge ({version})"),
+        }
+    }
+
     pub fn from_string(name: &str, version: Option<&str>) -> Result<Self, ConduitError> {
         let name_lower = name.to_lowercase();
 

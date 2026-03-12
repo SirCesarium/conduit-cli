@@ -36,7 +36,7 @@ pub enum ConduitError {
     #[error("unsupported loader or version: {0}")]
     Unsupported(String),
 
-    #[error("lockfile not found, please install first")]
+    #[error("couldn't launch loader, please install it first")]
     NotInstalled,
 
     #[error("could not find a valid entry point (server.jar or args file)")]

@@ -72,8 +72,8 @@ async fn run_app() -> miette::Result<()> {
         Commands::Add(args) => {
             cmds.add(args).await?;
         }
-        Commands::Start => {
-            println!("Not implemented");
+        Commands::Start(args) => {
+            cmds.start(args).await?;
         }
     }
 

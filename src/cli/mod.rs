@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 
-use crate::cli::commands::{add::AddArgs, init::InitArgs, install::InstallArgs};
+use crate::cli::commands::{add::AddArgs, init::InitArgs, install::InstallArgs, start::StartArgs};
 
 pub mod commands;
 mod errors;
@@ -19,7 +19,7 @@ pub enum Commands {
     Init(InitArgs),
     Install(InstallArgs),
     Add(AddArgs),
-    Start,
+    Start(StartArgs),
 }
 
 #[derive(Subcommand)]
