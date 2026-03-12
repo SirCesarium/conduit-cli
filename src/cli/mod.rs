@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 
-use crate::cli::commands::{init::InitArgs, install::InstallArgs};
+use crate::cli::commands::{add::AddArgs, init::InitArgs, install::InstallArgs};
 
 pub mod commands;
 mod errors;
@@ -18,14 +18,8 @@ pub struct Cli {
 pub enum Commands {
     Init(InitArgs),
     Install(InstallArgs),
+    Add(AddArgs),
     Start,
-    Add {
-        #[command(subcommand)]
-        target: Option<AddTarget>,
-
-        #[arg(required = true, num_args = 1..)]
-        slugs: Vec<String>,
-    },
 }
 
 #[derive(Subcommand)]

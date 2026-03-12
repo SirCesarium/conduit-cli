@@ -12,18 +12,12 @@ impl ProjectManager {
         let mut manifest = self.ctx.manifest.read().await.clone();
         let lock = self.ctx.lockfile.read().await.clone();
 
+        validate_loader_compatibility(&manifest.project.minecraft, &loader)?;
+
         let resolved = self
             .resolver
             .resolve_loader(&loader, &manifest.project.minecraft)
             .await?;
-
-        if let Loader::Forge { version } | Loader::Neoforge { version } = &loader
-            && !version.contains(&manifest.project.minecraft) {
-                return Err(crate::errors::ConduitError::Validation(format!(
-                    "Loader version '{}' is not compatible with Minecraft {}",
-                    version, manifest.project.minecraft
-                )));
-            }
 
         let mut active_lock = self.workflow.migration(&manifest, &lock).await?;
 
@@ -68,4 +62,30 @@ impl ProjectManager {
 
         Ok(())
     }
+}
+
+fn validate_loader_compatibility(mc_version: &str, loader: &Loader) -> ConduitResult<()> {
+    match loader {
+        Loader::Forge { version } => {
+            if !version.contains(mc_version) {
+                return Err(crate::errors::ConduitError::Validation(format!(
+                    "Forge {version} is not compatible with Minecraft {mc_version}"
+                )));
+            }
+        }
+        Loader::Neoforge { version } => {
+            let mc_parts: Vec<&str> = mc_version.split('.').collect();
+            let nf_parts: Vec<&str> = version.split('.').collect();
+
+            if let (Some(mc_minor), Some(nf_major)) = (mc_parts.get(1), nf_parts.first())
+                && mc_minor != nf_major
+            {
+                return Err(crate::errors::ConduitError::Validation(format!(
+                    "NeoForge {version} is not compatible with Minecraft {mc_version}"
+                )));
+            }
+        }
+        _ => {} // Vanilla, Fabric, etc., se validan en el resolver
+    }
+    Ok(())
 }

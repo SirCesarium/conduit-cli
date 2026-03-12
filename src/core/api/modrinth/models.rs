@@ -21,7 +21,6 @@ pub struct ProjectResponse {
     pub project_type: String,
     pub downloads: u64,
     pub icon_url: Option<String>,
-    pub color: Option<u32>,
     pub thread_id: String,
     pub monetization_status: String,
     pub team: String,
@@ -60,7 +59,7 @@ pub struct GalleryImage {
     pub title: Option<String>,
     pub description: Option<String>,
     pub created: String,
-    pub ordering: u32,
+    pub ordering: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -130,7 +129,6 @@ pub struct SearchHit {
     pub downloads: u64,
     pub follows: u64,
     pub icon_url: Option<String>,
-    pub color: Option<u32>,
     pub thread_id: String,
     pub monetization_status: String,
     pub license: String,

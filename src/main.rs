@@ -48,7 +48,15 @@ async fn run_app() -> miette::Result<()> {
     let lockfile = if lock_path.exists() {
         Lockfile::load(&lock_path).await.into_diagnostic()?
     } else {
-        Lockfile::default()
+        let mut lf = Lockfile::default();
+
+        lf.instance
+            .minecraft_version
+            .clone_from(&manifest.project.minecraft);
+
+        lf.instance.loader = manifest.project.loader.clone();
+
+        lf
     };
 
     let ctx = Arc::new(ConduitContext::new(paths.clone(), manifest, lockfile));
@@ -61,7 +69,10 @@ async fn run_app() -> miette::Result<()> {
         Commands::Install(args) => {
             cmds.install(args).await?;
         }
-        _ => {
+        Commands::Add(args) => {
+            cmds.add(args).await?;
+        }
+        Commands::Start => {
             println!("Not implemented");
         }
     }

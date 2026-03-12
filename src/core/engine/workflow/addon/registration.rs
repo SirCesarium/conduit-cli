@@ -11,16 +11,16 @@ use crate::{
 };
 
 impl Workflow {
-    pub async fn prepare_addon_uuids(
+    pub async fn prepare_addon_id(
         &self,
         resolved_list: &[ResolvedAddon],
     ) -> ConduitResult<HashMap<String, Uuid>> {
         let mut id_map = HashMap::new();
         let lockfile = self.ctx.lockfile.read().await;
 
-        for (uuid, entry) in &lockfile.entries {
+        for entry in lockfile.entries.values() {
             if let SourceType::Modrinth { id, .. } = &entry.source.r#type {
-                id_map.insert(id.clone(), *uuid);
+                id_map.insert(id.clone(), entry.metadata.id);
             }
         }
 

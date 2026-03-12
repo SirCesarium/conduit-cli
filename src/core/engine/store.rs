@@ -4,8 +4,8 @@ use std::path::{Path, PathBuf};
 use tokio::fs;
 use tokio::io::AsyncReadExt;
 
-use crate::errors::ConduitResult;
 use crate::core::schemas::lock::HashKind;
+use crate::errors::ConduitResult;
 
 #[derive(Clone, Debug)]
 pub struct Store {
@@ -36,12 +36,13 @@ impl Store {
         kind: HashKind,
     ) -> ConduitResult<String> {
         let mut file = fs::File::open(path).await?;
-        let mut buffer = [0; 8192];
+        let mut buffer = vec![0u8; 65536].into_boxed_slice();
 
         match kind {
             HashKind::Sha1 => {
                 let mut hasher = Sha1::new();
-                while let Ok(n) = file.read(&mut buffer).await {
+                loop {
+                    let n = file.read(&mut buffer).await?;
                     if n == 0 {
                         break;
                     }
@@ -51,7 +52,8 @@ impl Store {
             }
             HashKind::Sha256 => {
                 let mut hasher = Sha256::new();
-                while let Ok(n) = file.read(&mut buffer).await {
+                loop {
+                    let n = file.read(&mut buffer).await?;
                     if n == 0 {
                         break;
                     }
@@ -61,7 +63,8 @@ impl Store {
             }
             HashKind::Sha512 => {
                 let mut hasher = Sha512::new();
-                while let Ok(n) = file.read(&mut buffer).await {
+                loop {
+                    let n = file.read(&mut buffer).await?;
                     if n == 0 {
                         break;
                     }
@@ -80,12 +83,23 @@ impl Store {
     ) -> ConduitResult<()> {
         let target = self.object_path(hash, kind);
 
-        if let Some(parent) = target.parent() {
-            fs::create_dir_all(parent).await?;
+        if target.exists() {
+            return Ok(());
         }
 
-        if !target.exists() {
-            fs::copy(source, target).await?;
+        if let Some(parent) = target.parent() {
+            let _ = fs::create_dir_all(parent).await;
+        }
+
+        let temp_target = target.with_extension(format!("{}.tmp", uuid::Uuid::new_v4()));
+
+        fs::copy(&source, &temp_target).await?;
+
+        if let Err(e) = fs::rename(&temp_target, &target).await {
+            let _ = fs::remove_file(&temp_target).await;
+            if !target.exists() {
+                return Err(e.into());
+            }
         }
 
         Ok(())

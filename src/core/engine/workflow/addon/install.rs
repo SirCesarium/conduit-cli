@@ -1,5 +1,6 @@
 use std::{collections::HashMap, path::PathBuf};
 
+use tokio::fs;
 use uuid::Uuid;
 
 use crate::core::{
@@ -15,14 +16,15 @@ impl Workflow {
         resolved: ResolvedAddon,
         id_map: &HashMap<String, Uuid>,
     ) -> ConduitResult<()> {
-        let mut lockfile = self.ctx.lockfile.write().await;
-
-        if lockfile
-            .entries
-            .values()
-            .any(|e| e.metadata.slug == resolved.slug)
         {
-            return Ok(());
+            let lockfile = self.ctx.lockfile.read().await;
+            if lockfile
+                .entries
+                .values()
+                .any(|e| e.metadata.slug == resolved.slug)
+            {
+                return Ok(());
+            }
         }
 
         let (hash, kind) = self
@@ -35,22 +37,17 @@ impl Workflow {
 
         if let Some(parent) = rel_path.parent() {
             let full_parent = self.project_root.join(parent);
-            if !full_parent.exists() {
-                tokio::fs::create_dir_all(&full_parent).await?;
-            }
+            fs::create_dir_all(&full_parent).await?;
         }
 
         self.ctx
             .store
-            .install_to_project(&hash, kind, rel_path.clone())
+            .install_to_project(&hash, kind, rel_path)
             .await?;
 
-        let addon_uuid = id_map.get(&resolved.id).copied().ok_or_else(|| {
-            ConduitError::Deserialize(format!(
-                "Internal error: UUID not found for resolved addon '{}' ({})",
-                resolved.slug, resolved.id
-            ))
-        })?;
+        let addon_uuid = *id_map
+            .get(&resolved.id)
+            .ok_or_else(|| ConduitError::Deserialize(format!("UUID missing: {}", resolved.slug)))?;
 
         let dependency_uuids = resolved
             .dependencies
@@ -59,8 +56,11 @@ impl Workflow {
             .copied()
             .collect();
 
+        let lock_key = format!("{}:{}", resolved.source.r#type, resolved.slug);
+
+        let mut lockfile = self.ctx.lockfile.write().await;
         lockfile.entries.insert(
-            addon_uuid,
+            lock_key,
             LockedAddon {
                 metadata: Addon {
                     id: addon_uuid,

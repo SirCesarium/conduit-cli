@@ -2,8 +2,7 @@ use crate::core::domain::addon::Addon;
 use crate::core::domain::loader::Loader;
 use crate::core::domain::source::AddonSource;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use uuid::Uuid;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum HashKind {
@@ -16,7 +15,7 @@ pub enum HashKind {
 pub struct Lockfile {
     pub version: u32,
     pub instance: InstanceSnapshot,
-    pub entries: HashMap<Uuid, LockedAddon>,
+    pub entries: BTreeMap<String, LockedAddon>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -38,7 +37,7 @@ impl Default for Lockfile {
         Self {
             version: 1,
             instance: InstanceSnapshot::default(),
-            entries: std::collections::HashMap::new(),
+            entries: BTreeMap::new(),
         }
     }
 }

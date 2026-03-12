@@ -1,5 +1,5 @@
-use crate::core::engine::resolver::Resolver;
 use crate::core::domain::loader::Loader;
+use crate::core::engine::resolver::Resolver;
 use crate::errors::ConduitResult;
 
 pub struct ResolvedLoader {
@@ -45,10 +45,7 @@ impl Resolver {
             }
             Loader::Fabric => {
                 let installer_version = self.api.fabricmc.get_latest_installer().await?;
-                let url = self
-                    .api
-                    .fabricmc
-                    .build_installer_url(&installer_version);
+                let url = self.api.fabricmc.build_installer_url(&installer_version);
                 Ok(ResolvedLoader {
                     url,
                     hash: String::new(),
@@ -56,11 +53,7 @@ impl Resolver {
                 })
             }
             Loader::Forge { version } => {
-                let forge_version = self
-                    .api
-                    .minecraftforge
-                    .get_latest_version(version)
-                    .await?;
+                let forge_version = self.api.minecraftforge.get_latest_version(version).await?;
                 let url = self
                     .api
                     .minecraftforge
