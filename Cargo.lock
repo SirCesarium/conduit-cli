@@ -266,7 +266,7 @@ dependencies = [
 
 [[package]]
 name = "conduit-cli"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "clap",
  "comfy-table",
