@@ -1,8 +1,9 @@
 use crate::errors::{ConduitError, ConduitResult};
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::Path;
-use zip::ZipArchive;
+use zip::write::FileOptions;
+use zip::{ZipArchive, ZipWriter};
 
 pub struct SafeArchive;
 
@@ -18,30 +19,74 @@ impl SafeArchive {
         })
     }
 
-    pub fn read_file(archive: &mut ZipArchive<File>, name: &str) -> ConduitResult<String> {
-        if name.contains("..") || name.starts_with('/') || name.contains('\\') {
+    pub fn create<P: AsRef<Path>>(path: P) -> ConduitResult<ZipWriter<File>> {
+        let file = File::create(&path)?;
+        Ok(ZipWriter::new(file))
+    }
+
+    pub fn read_metadata(archive: &mut ZipArchive<File>, name: &str) -> ConduitResult<String> {
+        let mut content = String::new();
+        let mut file = Self::get_validated_file(archive, name, 25 * 1024 * 1024)?;
+        file.read_to_string(&mut content).map_err(|e| {
+            ConduitError::Io(std::io::Error::other(format!(
+                "Failed to read metadata '{name}': {e}"
+            )))
+        })?;
+        Ok(content)
+    }
+
+    pub fn read_bytes(archive: &mut ZipArchive<File>, name: &str) -> ConduitResult<Vec<u8>> {
+        let mut buffer = Vec::new();
+        let mut file = Self::get_validated_file(archive, name, 100 * 1024 * 1024)?;
+        file.read_to_end(&mut buffer).map_err(|e| {
+            ConduitError::Io(std::io::Error::other(format!(
+                "Failed to read bytes from '{name}': {e}"
+            )))
+        })?;
+        Ok(buffer)
+    }
+
+    pub fn add_file<W: Write + std::io::Seek>(
+        writer: &mut ZipWriter<W>,
+        name: &str,
+        content: &[u8],
+    ) -> ConduitResult<()> {
+        let options: FileOptions<()> = FileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated)
+            .unix_permissions(0o644);
+
+        writer.start_file(name, options).map_err(|e| {
+            ConduitError::Storage(format!("Failed to create entry '{name}' in archive: {e}"))
+        })?;
+        writer.write_all(content)?;
+        Ok(())
+    }
+
+    fn get_validated_file<'a>(
+        archive: &'a mut ZipArchive<File>,
+        name: &str,
+        size_limit: u64,
+    ) -> ConduitResult<zip::read::ZipFile<'a, File>> {
+        let normalized_name = name.replace('\\', "/");
+
+        if normalized_name.contains("..") || normalized_name.starts_with('/') {
             return Err(ConduitError::Storage(format!(
-                "Security violation: malicious path detected in archive entry: {name}"
+                "Security violation: malicious path detected: {name}"
             )));
         }
 
-        let mut file = archive
+        let file = archive
             .by_name(name)
             .map_err(|_| ConduitError::NotFound(format!("Entry '{name}' not found in archive")))?;
 
-        if file.size() > 10 * 1024 * 1024 {
+        if file.size() > size_limit {
             return Err(ConduitError::Storage(format!(
-                "Security violation: entry '{name}' exceeds size limit (10MB)"
+                "Security violation: entry '{name}' size ({} MB) exceeds limit ({} MB)",
+                file.size() / 1024 / 1024,
+                size_limit / 1024 / 1024
             )));
         }
 
-        let mut content = String::new();
-        file.read_to_string(&mut content).map_err(|e| {
-            ConduitError::Io(std::io::Error::other(format!(
-                "Failed to read entry '{name}': {e}"
-            )))
-        })?;
-
-        Ok(content)
+        Ok(file)
     }
 }
