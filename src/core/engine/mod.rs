@@ -4,6 +4,7 @@ pub mod manager;
 pub mod resolver;
 pub mod store;
 pub mod workflow;
+pub mod archive;
 
 use crate::core::api::ConduitAPI;
 use crate::core::engine::downloader::Downloader;
