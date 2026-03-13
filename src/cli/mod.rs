@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::{Parser, Subcommand};
 
 use crate::cli::commands::{add::AddArgs, init::InitArgs, install::InstallArgs, start::StartArgs};
@@ -20,6 +22,10 @@ pub enum Commands {
     Install(InstallArgs),
     Add(AddArgs),
     Start(StartArgs),
+    Test {
+        #[arg(short, long)]
+        name: PathBuf,
+    },
 }
 
 #[derive(Subcommand)]

@@ -1,3 +1,5 @@
+use conduit_cli::core::engine::archive::SafeArchive;
+use conduit_cli::core::schemas::modpacks::modrinth::ModrinthIndex;
 use miette::IntoDiagnostic;
 use std::env;
 use std::sync::Arc;
@@ -74,6 +76,14 @@ async fn run_app() -> miette::Result<()> {
         }
         Commands::Start(args) => {
             cmds.start(args).await?;
+        }
+        Commands::Test { name } => {
+            let mut f = SafeArchive::open(&name).unwrap();
+            let x = SafeArchive::read_metadata(&mut f, "modrinth.index.json").unwrap();
+
+            let file: ModrinthIndex = serde_json::from_str(&x).unwrap();
+
+            println!("{}", file.files.len());
         }
     }
 
