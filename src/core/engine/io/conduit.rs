@@ -21,11 +21,8 @@ impl ConduitModpackManager {
         let manifest_path = ConduitPaths::manifest_name();
         let lockfile_path = ConduitPaths::lockfike_name();
 
-        let manifest_content = toml::to_string(&manifest)?.into_bytes();
-        let lockfile_content = toml::to_string(&lock)?.into_bytes();
-
-        SafeArchive::add_file(&mut writer, manifest_path, &manifest_content)?;
-        SafeArchive::add_file(&mut writer, lockfile_path, &lockfile_content)?;
+        SafeArchive::serialize_and_add(&mut writer, manifest_path, &manifest)?;
+        SafeArchive::serialize_and_add(&mut writer, lockfile_path, &lock)?;
 
         writer.finish().map_err(|e| {
             ConduitError::Storage(format!("Failed to finalize conduit modpack: {e}"))

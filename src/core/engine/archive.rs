@@ -111,4 +111,34 @@ impl SafeArchive {
             ))),
         }
     }
+
+    pub fn serialize_and_add<T, W>(
+        writer: &mut zip::ZipWriter<W>,
+        name: &str,
+        data: &T,
+    ) -> ConduitResult<()>
+    where
+        T: serde::Serialize,
+        W: std::io::Write + std::io::Seek,
+    {
+        let extension = std::path::Path::new(name)
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .map(str::to_lowercase);
+
+        let bytes = match extension.as_deref() {
+            Some("json") => serde_json::to_vec(data)
+                .map_err(|e| ConduitError::Parsing(format!("JSON serialize error: {e}")))?,
+            Some("toml") => toml::to_string(data)
+                .map_err(|e| ConduitError::Parsing(format!("TOML serialize error: {e}")))?
+                .into_bytes(),
+            _ => {
+                return Err(ConduitError::Parsing(
+                    "Unsupported export format".to_string(),
+                ));
+            }
+        };
+
+        Self::add_file(writer, name, &bytes)
+    }
 }
