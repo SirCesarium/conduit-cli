@@ -50,6 +50,9 @@ pub enum ConduitError {
 
     #[error("Validation failed: {0}")]
     Validation(String),
+
+    #[error("Error while parsing file: {0}")]
+    Parsing(String),
 }
 
 pub type ConduitResult<T> = Result<T, ConduitError>;

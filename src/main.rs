@@ -77,14 +77,6 @@ async fn run_app() -> miette::Result<()> {
         Commands::Start(args) => {
             cmds.start(args).await?;
         }
-        Commands::Test { name } => {
-            let mut f = SafeArchive::open(&name).unwrap();
-            let x = SafeArchive::read_metadata(&mut f, "modrinth.index.json").unwrap();
-
-            let file: ModrinthIndex = serde_json::from_str(&x).unwrap();
-
-            println!("{}", file.files.len());
-        }
     }
 
     Ok(())
