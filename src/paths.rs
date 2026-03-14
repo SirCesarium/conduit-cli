@@ -19,12 +19,20 @@ impl ConduitPaths {
         Self { root, store }
     }
 
+    pub fn manifest_name() -> &'static str {
+        "conduit.toml"
+    }
+
+    pub fn lockfike_name() -> &'static str {
+        "conduit.lock"
+    }
+
     pub fn manifest(&self) -> PathBuf {
-        self.root.join("conduit.toml")
+        self.root.join(Self::manifest_name())
     }
 
     pub fn lock(&self) -> PathBuf {
-        self.root.join("conduit.lock")
+        self.root.join(Self::lockfike_name())
     }
 
     pub fn runtimes_dir(&self) -> PathBuf {

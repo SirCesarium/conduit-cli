@@ -1,5 +1,3 @@
-use conduit_cli::core::engine::archive::SafeArchive;
-use conduit_cli::core::schemas::modpacks::modrinth::ModrinthIndex;
 use miette::IntoDiagnostic;
 use std::env;
 use std::sync::Arc;

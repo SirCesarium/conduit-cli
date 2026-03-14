@@ -38,10 +38,9 @@ impl MrPackManager {
 
     pub fn open(path: PathBuf) -> ConduitResult<Self> {
         let mut zip = SafeArchive::open(path)?;
-        let raw_file = SafeArchive::read_metadata(&mut zip, "modrinth.index.json")?;
-        let file: ModrinthIndex = serde_json::from_str(&raw_file)
-            .into_diagnostic()
-            .map_err(|e| ConduitError::Parsing(e.to_string()))?;
+
+        let file: ModrinthIndex =
+            SafeArchive::read_and_deserialize(&mut zip, "modrinth.index.json")?;
 
         Ok(MrPackManager { file })
     }

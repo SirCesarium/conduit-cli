@@ -89,4 +89,26 @@ impl SafeArchive {
 
         Ok(file)
     }
+
+    pub fn read_and_deserialize<T>(archive: &mut ZipArchive<File>, name: &str) -> ConduitResult<T>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        let raw = Self::read_metadata(archive, name)?;
+
+        let extension = Path::new(name)
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .map(str::to_lowercase);
+
+        match extension.as_deref() {
+            Some("json") => serde_json::from_str(&raw)
+                .map_err(|e| ConduitError::Parsing(format!("JSON error in {name}: {e}"))),
+            Some("toml") => toml::from_str(&raw)
+                .map_err(|e| ConduitError::Parsing(format!("TOML error in {name}: {e}"))),
+            _ => Err(ConduitError::Parsing(format!(
+                "Unsupported or missing file extension for deserialization: {name}"
+            ))),
+        }
+    }
 }

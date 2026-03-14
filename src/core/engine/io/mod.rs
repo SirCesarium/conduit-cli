@@ -1,3 +1,4 @@
+mod conduit;
 mod mrpack;
 mod toml;
 
