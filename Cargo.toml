@@ -1,6 +1,6 @@
 [package]
 name = "conduit-cli"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2024"
 authors = ["SirCesarium"]
 description = "A lightning-fast Minecraft mod manager"
@@ -36,13 +36,7 @@ libc = "0.2.182"
 
 [features]
 default = ["cli"]
-cli = [
-    "dep:clap",
-    "dep:console",
-    "dep:inquire",
-    "dep:indicatif",
-
-]
+cli = ["dep:clap", "dep:console", "dep:inquire", "dep:indicatif"]
 
 [[bin]]
 name = "conduit"
@@ -60,7 +54,7 @@ assets = [["target/release/conduit", "/usr/bin/conduit", "755"]]
 
 [package.metadata.generate-rpm]
 assets = [
-    { source = "target/release/conduit", dest = "/usr/bin/conduit", mode = "755" },
+  { source = "target/release/conduit", dest = "/usr/bin/conduit", mode = "755" },
 ]
 
 [lints.clippy]
