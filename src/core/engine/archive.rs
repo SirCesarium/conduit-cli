@@ -129,7 +129,7 @@ impl SafeArchive {
         let bytes = match extension.as_deref() {
             Some("json") => serde_json::to_vec(data)
                 .map_err(|e| ConduitError::Parsing(format!("JSON serialize error: {e}")))?,
-            Some("toml") => toml::to_string(data)
+            Some("toml" | "lock") => toml::to_string(data)
                 .map_err(|e| ConduitError::Parsing(format!("TOML serialize error: {e}")))?
                 .into_bytes(),
             _ => {

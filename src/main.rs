@@ -75,6 +75,9 @@ async fn run_app() -> miette::Result<()> {
         Commands::Start(args) => {
             cmds.start(args).await?;
         }
+        Commands::Export(args) => {
+            cmds.export(args).await?;
+        }
     }
 
     Ok(())

@@ -1,8 +1,8 @@
-use std::path::PathBuf;
-
 use clap::{Parser, Subcommand};
 
-use crate::cli::commands::{add::AddArgs, init::InitArgs, install::InstallArgs, start::StartArgs};
+use crate::cli::commands::{
+    add::AddArgs, export::ExportArgs, init::InitArgs, install::InstallArgs, start::StartArgs,
+};
 
 pub mod commands;
 mod errors;
@@ -22,6 +22,7 @@ pub enum Commands {
     Install(InstallArgs),
     Add(AddArgs),
     Start(StartArgs),
+    Export(ExportArgs),
 }
 
 #[derive(Subcommand)]
