@@ -1,8 +1,9 @@
+use conduit_cli::core::schemas::include::ConduitInclude;
 use miette::IntoDiagnostic;
 use std::env;
 use std::sync::Arc;
 
-use conduit_cli::core::engine::io::TomlFile;
+use conduit_cli::core::engine::io::{IncludeFile, TomlFile};
 use conduit_cli::core::schemas::lock::Lockfile;
 use conduit_cli::core::schemas::manifest::Manifest;
 use conduit_cli::{core::engine::ConduitContext, paths::ConduitPaths};
@@ -38,11 +39,20 @@ async fn run_app() -> miette::Result<()> {
 
     let manifest_path = paths.manifest();
     let lock_path = paths.lock();
+    let include_path = paths.include();
 
     let manifest = if manifest_path.exists() {
         Manifest::load(&manifest_path).await.into_diagnostic()?
     } else {
         Manifest::default()
+    };
+
+    let include = if include_path.exists() {
+        ConduitInclude::load(&include_path)
+            .await
+            .into_diagnostic()?
+    } else {
+        ConduitInclude::default()
     };
 
     let lockfile = if lock_path.exists() {
@@ -59,7 +69,12 @@ async fn run_app() -> miette::Result<()> {
         lf
     };
 
-    let ctx = Arc::new(ConduitContext::new(paths.clone(), manifest, lockfile));
+    let ctx = Arc::new(ConduitContext::new(
+        paths.clone(),
+        manifest,
+        lockfile,
+        include,
+    ));
     let cmds = Cmds::new(ctx, paths.root.clone());
 
     match cli.command {
