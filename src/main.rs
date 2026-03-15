@@ -60,7 +60,7 @@ async fn run_app() -> miette::Result<()> {
     };
 
     let ctx = Arc::new(ConduitContext::new(paths.clone(), manifest, lockfile));
-    let cmds = Cmds::new(ctx, paths.root);
+    let cmds = Cmds::new(ctx, paths.root.clone());
 
     match cli.command {
         Commands::Init(args) => {

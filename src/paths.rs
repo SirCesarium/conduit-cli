@@ -23,8 +23,12 @@ impl ConduitPaths {
         "conduit.toml"
     }
 
-    pub fn lockfike_name() -> &'static str {
+    pub fn lockfile_name() -> &'static str {
         "conduit.lock"
+    }
+
+    pub fn include_name() -> &'static str {
+        ".conduitinclude"
     }
 
     pub fn manifest(&self) -> PathBuf {
@@ -32,7 +36,11 @@ impl ConduitPaths {
     }
 
     pub fn lock(&self) -> PathBuf {
-        self.root.join(Self::lockfike_name())
+        self.root.join(Self::lockfile_name())
+    }
+
+    pub fn include(&self) -> PathBuf {
+        self.root.join(Self::include_name())
     }
 
     pub fn runtimes_dir(&self) -> PathBuf {

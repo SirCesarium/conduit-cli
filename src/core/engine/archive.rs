@@ -141,4 +141,26 @@ impl SafeArchive {
 
         Self::add_file(writer, name, &bytes)
     }
+
+    pub fn add_file_from_reader<W, R>(
+        writer: &mut ZipWriter<W>,
+        name: &str,
+        mut reader: R,
+    ) -> ConduitResult<()>
+    where
+        W: Write + std::io::Seek,
+        R: Read,
+    {
+        let options: FileOptions<()> = FileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated)
+            .unix_permissions(0o644);
+
+        writer.start_file(name, options).map_err(|e| {
+            ConduitError::Storage(format!("Failed to create entry '{name}' in archive: {e}"))
+        })?;
+
+        std::io::copy(&mut reader, writer).map_err(ConduitError::Io)?;
+
+        Ok(())
+    }
 }
