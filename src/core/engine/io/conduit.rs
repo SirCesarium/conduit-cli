@@ -86,4 +86,9 @@ impl ConduitModpackManager {
             include,
         })
     }
+
+    pub fn extract_to(&self, archive_path: PathBuf, destination: &Path) -> ConduitResult<()> {
+        let mut zip = SafeArchive::open(archive_path)?;
+        SafeArchive::extract_prefix(&mut zip, "overrides/", destination)
+    }
 }

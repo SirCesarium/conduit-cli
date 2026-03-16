@@ -163,4 +163,42 @@ impl SafeArchive {
 
         Ok(())
     }
+
+    pub fn extract_prefix<P: AsRef<Path>>(
+        archive: &mut ZipArchive<File>,
+        prefix: &str,
+        destination: P,
+    ) -> ConduitResult<()> {
+        let destination = destination.as_ref();
+
+        for i in 0..archive.len() {
+            let mut file = archive.by_index(i).map_err(|e| {
+                ConduitError::Storage(format!("Failed to read file index {i}: {e}"))
+            })?;
+
+            let Some(relative_path) = file.name().strip_prefix(prefix) else {
+                continue;
+            };
+
+            let out_path = destination.join(relative_path);
+            if !out_path.starts_with(destination) {
+                return Err(ConduitError::Storage(format!(
+                    "Malicious path detected in archive: {}",
+                    file.name()
+                )));
+            }
+
+            if let Some(parent) = out_path.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+
+            if file.is_dir() {
+                std::fs::create_dir_all(&out_path)?;
+            } else {
+                let mut outfile = File::create(&out_path)?;
+                std::io::copy(&mut file, &mut outfile)?;
+            }
+        }
+        Ok(())
+    }
 }

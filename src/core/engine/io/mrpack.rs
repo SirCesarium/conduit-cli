@@ -1,4 +1,8 @@
-use std::{collections::HashMap, fs::File, path::PathBuf};
+use std::{
+    collections::HashMap,
+    fs::File,
+    path::{Path, PathBuf},
+};
 
 use crate::{
     core::{engine::archive::SafeArchive, schemas::modpacks::modrinth::ModrinthIndex},
@@ -58,5 +62,14 @@ impl MrPackManager {
             SafeArchive::read_and_deserialize(&mut zip, "modrinth.index.json")?;
 
         Ok(MrPackManager { file })
+    }
+
+    pub fn extract_overrides(
+        &self,
+        archive_path: PathBuf,
+        destination: &Path,
+    ) -> ConduitResult<()> {
+        let mut zip = SafeArchive::open(archive_path)?;
+        SafeArchive::extract_prefix(&mut zip, "overrides/", destination)
     }
 }
