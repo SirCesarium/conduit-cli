@@ -32,7 +32,7 @@ uuid = { version = "1.22.0", features = ["v4", "serde"] }
 zip = "8.2.0"
 
 [target.'cfg(unix)'.dependencies]
-libc = "0.2.182"
+libc = "0.2.186"
 
 [features]
 default = ["cli"]
