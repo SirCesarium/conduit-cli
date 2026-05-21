@@ -1,5 +1,5 @@
 use sha1::{Sha1, Digest};
-use sha2::{Digest as Sha2Digest, Sha256, Sha512};
+use sha2::{Sha256, Sha512};
 use std::path::{Path, PathBuf};
 use tokio::fs;
 use tokio::io::AsyncReadExt;
@@ -48,7 +48,15 @@ impl Store {
                     }
                     hasher.update(&buffer[..n]);
                 }
-                Ok(format!("{:x}", hasher.finalize()))
+                let hash = hasher.finalize();
+                Ok(hash.as_slice().iter().fold(
+                    String::with_capacity(40),
+                    |mut s, b| {
+                        use std::fmt::Write;
+                        let _ = write!(s, "{b:02x}");
+                        s
+                    },
+                ))
             }
             HashKind::Sha256 => {
                 let mut hasher = Sha256::new();
